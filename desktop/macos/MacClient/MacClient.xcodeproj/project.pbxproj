@@ -1,0 +1,314 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1000001000000000000001A /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000001B /* App.swift */; };
+		A1000001000000000000002A /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000002B /* AppState.swift */; };
+		A1000001000000000000003A /* PermissionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000003B /* PermissionsService.swift */; };
+		A1000001000000000000004A /* CaptureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000004B /* CaptureController.swift */; };
+		A1000001000000000000005A /* DesktopMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000005B /* DesktopMainView.swift */; };
+		A1000001000000000000006A /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000006B /* AudioEngine.swift */; };
+		A1000001000000000000007A /* DeepgramClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000007B /* DeepgramClient.swift */; };
+		A1000001000000000000008A /* LanguageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000008B /* LanguageManager.swift */; };
+		A1000001000000000000009A /* MicCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000009B /* MicCapture.swift */; };
+		A100000100000000000000AA /* SystemAudioCaptureSC.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000AB /* SystemAudioCaptureSC.swift */; };
+		A100000100000000000000BA /* AudioSourceType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000BB /* AudioSourceType.swift */; };
+		A100000100000000000000CA /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000CB /* PermissionManager.swift */; };
+		A100000100000000000000DA /* APIKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000DB /* APIKeyManager.swift */; };
+		A100000100000000000000EA /* Resampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000EB /* Resampler.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A1000001000000000000001B /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+		A1000001000000000000002B /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		A1000001000000000000003B /* PermissionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsService.swift; sourceTree = "<group>"; };
+		A1000001000000000000004B /* CaptureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureController.swift; sourceTree = "<group>"; };
+		A1000001000000000000005B /* DesktopMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopMainView.swift; sourceTree = "<group>"; };
+		A1000001000000000000006B /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
+		A1000001000000000000007B /* DeepgramClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepgramClient.swift; sourceTree = "<group>"; };
+		A1000001000000000000008B /* LanguageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageManager.swift; sourceTree = "<group>"; };
+		A1000001000000000000009B /* MicCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicCapture.swift; sourceTree = "<group>"; };
+		A100000100000000000000AB /* SystemAudioCaptureSC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioCaptureSC.swift; sourceTree = "<group>"; };
+		A100000100000000000000BB /* AudioSourceType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSourceType.swift; sourceTree = "<group>"; };
+		A100000100000000000000CB /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
+		A100000100000000000000DB /* APIKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeyManager.swift; sourceTree = "<group>"; };
+		A100000100000000000000EB /* Resampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Resampler.swift; sourceTree = "<group>"; };
+		A100000100000000000000FB /* MacClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A100000100000000000001FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Resources/Info.plist"; sourceTree = "<group>"; };
+		A100000100000000000002FB /* Entitlements.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Resources/Entitlements.plist"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A100000100000000000003FB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A100000100000000000004FB = {
+			isa = PBXGroup;
+			children = (
+				A100000100000000000005FB /* MacClient */,
+				A100000100000000000006FB /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A100000100000000000005FB /* MacClient */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001000000000000001B /* App.swift */,
+				A1000001000000000000002B /* AppState.swift */,
+				A1000001000000000000003B /* PermissionsService.swift */,
+				A1000001000000000000004B /* CaptureController.swift */,
+				A1000001000000000000005B /* DesktopMainView.swift */,
+				A100000100000000000007FB /* AudioAssist_V1_Sources */,
+				A100000100000000000008FB /* Resources */,
+			);
+			sourceTree = "<group>";
+		};
+		A100000100000000000006FB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A100000100000000000000FB /* MacClient.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A100000100000000000007FB /* AudioAssist_V1_Sources */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001000000000000006B /* AudioEngine.swift */,
+				A1000001000000000000007B /* DeepgramClient.swift */,
+				A1000001000000000000008B /* LanguageManager.swift */,
+				A1000001000000000000009B /* MicCapture.swift */,
+				A100000100000000000000AB /* SystemAudioCaptureSC.swift */,
+				A100000100000000000000BB /* AudioSourceType.swift */,
+				A100000100000000000000CB /* PermissionManager.swift */,
+				A100000100000000000000DB /* APIKeyManager.swift */,
+				A100000100000000000000EB /* Resampler.swift */,
+			);
+			path = AudioAssist_V1_Sources;
+			sourceTree = "<group>";
+		};
+		A100000100000000000008FB /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A100000100000000000001FB /* Info.plist */,
+				A100000100000000000002FB /* Entitlements.plist */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A100000100000000000009FB /* MacClient */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000010000000000000AFB /* Build configuration list for PBXNativeTarget "MacClient" */;
+			buildPhases = (
+				A10000010000000000000BFB /* Sources */,
+				A100000100000000000003FB /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MacClient;
+			productName = MacClient;
+			productReference = A100000100000000000000FB /* MacClient.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A10000010000000000000CFB /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					A100000100000000000009FB = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = A10000010000000000000DFB /* Build configuration list for PBXProject "MacClient" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A100000100000000000004FB;
+			productRefGroup = A100000100000000000006FB /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A100000100000000000009FB /* MacClient */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A10000010000000000000BFB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000001000000000000001A /* App.swift in Sources */,
+				A1000001000000000000002A /* AppState.swift in Sources */,
+				A1000001000000000000003A /* PermissionsService.swift in Sources */,
+				A1000001000000000000004A /* CaptureController.swift in Sources */,
+				A1000001000000000000005A /* DesktopMainView.swift in Sources */,
+				A1000001000000000000006A /* AudioEngine.swift in Sources */,
+				A1000001000000000000007A /* DeepgramClient.swift in Sources */,
+				A1000001000000000000008A /* LanguageManager.swift in Sources */,
+				A1000001000000000000009A /* MicCapture.swift in Sources */,
+				A100000100000000000000AA /* SystemAudioCaptureSC.swift in Sources */,
+				A100000100000000000000BA /* AudioSourceType.swift in Sources */,
+				A100000100000000000000CA /* PermissionManager.swift in Sources */,
+				A100000100000000000000DA /* APIKeyManager.swift in Sources */,
+				A100000100000000000000EA /* Resampler.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A10000010000000000000EFB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A10000010000000000000FFB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		A100000100000000000010FB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "Resources/Entitlements.plist";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Resources/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.meetingai.macclient;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A100000100000000000011FB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "Resources/Entitlements.plist";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Resources/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.meetingai.macclient;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A10000010000000000000AFB /* Build configuration list for PBXNativeTarget "MacClient" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A100000100000000000010FB /* Debug */,
+				A100000100000000000011FB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000010000000000000DFB /* Build configuration list for PBXProject "MacClient" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000010000000000000EFB /* Debug */,
+				A10000010000000000000FFB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A10000010000000000000CFB /* Project object */;
+}

@@ -1,0 +1,7 @@
+{
+  "name": "Cluely & Otter.ai Inspired Meeting AI",
+  "description": "A UI mockup of a comprehensive web dashboard for a meeting transcription and AI analysis tool, inspired by Cluely.ai and Otter.ai. It features meeting playback, AI-generated summaries, user analytics, and team management functionalities.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
