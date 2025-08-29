@@ -52,11 +52,18 @@ class DeepgramLiveClient:
         
     async def connect(self) -> None:
         """Connect to Deepgram Live API."""
+        print(f"🔧 DeepgramLiveClient.connect() CALLED for {self.meeting_id}")  # DEBUG
+        print(f"🔧 is_connected: {self.is_connected}")  # DEBUG
+        
         if self.is_connected:
+            print(f"🔧 EARLY RETURN: already connected for {self.meeting_id}")  # DEBUG
             return
         
         if not settings.DEEPGRAM_API_KEY:
+            print(f"🔧 NO API KEY for {self.meeting_id}")  # DEBUG
             raise ValueError("DEEPGRAM_API_KEY not configured")
+        
+        print(f"🔧 API KEY OK for {self.meeting_id}: ***{settings.DEEPGRAM_API_KEY[-4:]}")  # DEBUG
         
         # Build connection parameters
         params = {
@@ -73,6 +80,7 @@ class DeepgramLiveClient:
         }
         
         url = f"{settings.DEEPGRAM_ENDPOINT}?{urlencode(params)}"
+        print(f"🔧 Deepgram URL for {self.meeting_id}: {url}")  # DEBUG
         
         headers = {
             "Authorization": f"Token {settings.DEEPGRAM_API_KEY}",
@@ -80,16 +88,18 @@ class DeepgramLiveClient:
         }
         
         try:
+            print(f"🔧 BEFORE websockets.connect() for {self.meeting_id}")  # DEBUG
             logger.info(f"🔗 Connecting to Deepgram: {self.model} ({self.language})")
             
             self.websocket = await websockets.connect(
                 url,
-                extra_headers=headers,
+                additional_headers=headers,
                 ping_interval=20,
                 ping_timeout=10,
                 close_timeout=10
             )
             
+            print(f"🔧 AFTER websockets.connect() SUCCESS for {self.meeting_id}")  # DEBUG
             self.is_connected = True
             self.connected_at = datetime.utcnow()
             
@@ -97,8 +107,10 @@ class DeepgramLiveClient:
             self._listener_task = asyncio.create_task(self._listen_loop())
             
             logger.info(f"✅ Deepgram connected for meeting:{self.meeting_id}")
+            print(f"🔧 DeepgramLiveClient.connect() COMPLETED for {self.meeting_id}")  # DEBUG
             
         except Exception as e:
+            print(f"🔧 websockets.connect() EXCEPTION for {self.meeting_id}: {e}")  # DEBUG
             logger.error(f"❌ Failed to connect to Deepgram: {e}")
             await self._handle_error(f"Connection failed: {e}")
             raise

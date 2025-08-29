@@ -13,8 +13,14 @@ enum AudioEngineEvent {
     case finalized(String, source: AudioSourceType) // JSON from finalize command
 }
 
+/// Audio transport modes
+enum AudioTransportMode {
+    case backendWS    // Route PCM to backend WebSocket (default)
+    case deepgram     // Direct Deepgram connection (legacy)
+}
+
 /// Coordinates audio capture from multiple sources and processing pipeline
-/// Manages microphone + system audio capture with dual Deepgram connections
+/// Supports both backend WebSocket routing and direct Deepgram connections
 class AudioEngine {
     
     // MARK: - Properties
@@ -27,23 +33,36 @@ class AudioEngine {
     private var isRunning = false
     private var currentConfig: DGConfig?
     
+    // Transport mode - controls whether to use backend WS or direct Deepgram
+    private let transportMode: AudioTransportMode
+    
     // Event callback for UI updates
     var onEvent: ((AudioEngineEvent) -> Void)?
     
+    // PCM callbacks for backend routing
+    var onMicPCM: ((Data) -> Void)?
+    var onSystemPCM: ((Data) -> Void)?
+    
     // MARK: - Initialization
     
-    init(config: DGConfig) {
-        print("[DEBUG] AudioEngine initialized with config")
+    init(config: DGConfig, transportMode: AudioTransportMode = .backendWS) {
+        print("[DEBUG] AudioEngine initialized with config, transport: \(transportMode)")
         
         self.currentConfig = config
+        self.transportMode = transportMode
         
         // Initialize audio capture components
         self.micCapture = MicCapture()
         self.systemAudioCapture = SystemAudioCaptureSC()
         
-        // Create Deepgram clients with provided config
-        createDeepgramClients(with: config)
-        setupDeepgramEvents()
+        // Only create Deepgram clients in direct mode
+        if transportMode == .deepgram {
+            createDeepgramClients(with: config)
+            setupDeepgramEvents()
+            print("[DEBUG] ✅ Deepgram clients created (direct mode)")
+        } else {
+            print("[DEBUG] ✅ Backend WebSocket mode - Deepgram clients disabled")
+        }
     }
     
 
@@ -91,8 +110,13 @@ class AudioEngine {
         }
     }
     
-    /// Create Deepgram clients with given configuration
+    /// Create Deepgram clients with given configuration (only in .deepgram mode)
     private func createDeepgramClients(with config: DGConfig) {
+        guard transportMode == .deepgram else {
+            print("[DEBUG] ⚠️ Skipping Deepgram client creation - backend WebSocket mode")
+            return
+        }
+        
         // Clean up existing clients
         microphoneClient?.closeSocket()
         systemAudioClient?.closeSocket()
@@ -142,17 +166,19 @@ class AudioEngine {
             return
         }
         
-        // Check API key before starting
-        if !APIKeyManager.hasValidAPIKey() {
-            print("[DEBUG] ❌ Cannot start AudioEngine: API key missing")
+        // Check API key only for direct Deepgram mode
+        if transportMode == .deepgram && !APIKeyManager.hasValidAPIKey() {
+            print("[DEBUG] ❌ Cannot start AudioEngine: API key missing for Deepgram mode")
             let status = APIKeyManager.getAPIKeyStatus()
             print("[DEBUG] 🔍 API Key Status: source=\(status.source), key=\(status.maskedKey)")
             onEvent?(.error(NSError(domain: "AudioEngine", code: -1, userInfo: [NSLocalizedDescriptionKey: "DEEPGRAM_API_KEY is missing"]), source: .microphone))
             return
+        } else if transportMode == .backendWS {
+            print("[DEBUG] ✅ Backend WebSocket mode - skipping Deepgram API key check")
         }
         
-        // Ensure clients exist
-        if microphoneClient == nil || systemAudioClient == nil {
+        // Ensure clients exist (only for Deepgram mode)
+        if transportMode == .deepgram && (microphoneClient == nil || systemAudioClient == nil) {
             print("[DEBUG] 🔄 Deepgram clients not initialized, creating them")
             createDeepgramClients(with: config)
         }
@@ -172,40 +198,53 @@ class AudioEngine {
         }
     }
     
-    /// Start microphone stream with dedicated Deepgram connection
+    /// Start microphone stream
     private func startMicrophoneStream() {
-        print("[DEBUG] 🎤 Starting microphone stream...")
+        print("[DEBUG] 🎤 Starting microphone stream (transport: \(transportMode))...")
         
-        guard let micClient = microphoneClient else {
-            print("[DEBUG] ❌ Microphone client not available")
-            return
-        }
-        
-        // Connect microphone client to Deepgram
-        micClient.connect { [weak self] event in
-            self?.handleMicrophoneEvent(event)
+        // Connect to Deepgram only in direct mode
+        if transportMode == .deepgram {
+            guard let micClient = microphoneClient else {
+                print("[DEBUG] ❌ Microphone client not available")
+                return
+            }
+            
+            // Connect microphone client to Deepgram
+            micClient.connect { [weak self] event in
+                self?.handleMicrophoneEvent(event)
+            }
         }
         
         // Start microphone capture
         micCapture.start { [weak self] pcmData in
-            print("[DEBUG] 🎤 Mic PCM data: \(pcmData.count) bytes (samples: \(pcmData.count/2))")
-            // Send microphone PCM data to dedicated Deepgram connection
-            self?.microphoneClient?.sendPCM(pcmData)
+            guard let self = self else { return }
+            
+            switch self.transportMode {
+            case .backendWS:
+                // Route to backend WebSocket via callback
+                self.onMicPCM?(pcmData)
+            case .deepgram:
+                // Send directly to Deepgram
+                self.microphoneClient?.sendPCM(pcmData)
+            }
         }
     }
     
-    /// Start system audio stream with dedicated Deepgram connection
+    /// Start system audio stream
     private func startSystemAudioStream() {
-        print("[DEBUG] 🔊 Starting system audio stream...")
+        print("[DEBUG] 🔊 Starting system audio stream (transport: \(transportMode))...")
         
-        guard let sysClient = systemAudioClient else {
-            print("[DEBUG] ❌ System audio client not available")
-            return
-        }
-        
-        // Connect system audio client to Deepgram
-        sysClient.connect { [weak self] event in
-            self?.handleSystemAudioEvent(event)
+        // Connect to Deepgram only in direct mode
+        if transportMode == .deepgram {
+            guard let sysClient = systemAudioClient else {
+                print("[DEBUG] ❌ System audio client not available")
+                return
+            }
+            
+            // Connect system audio client to Deepgram
+            sysClient.connect { [weak self] event in
+                self?.handleSystemAudioEvent(event)
+            }
         }
         
         // Start system audio capture with ScreenCaptureKit
@@ -214,9 +253,16 @@ class AudioEngine {
                 do {
                     // Set up callback before starting
                     systemAudioCapture.onPCM16k = { [weak self] pcmData in
-                        print("[DEBUG] 🔊 System PCM data: \(pcmData.count) bytes (48kHz mono Int16: \(pcmData.count/2) samples)")
-                        // Send system audio PCM data to dedicated Deepgram connection
-                        self?.systemAudioClient?.sendPCM(pcmData)
+                        guard let self = self else { return }
+                        
+                        switch self.transportMode {
+                        case .backendWS:
+                            // Route to backend WebSocket via callback
+                            self.onSystemPCM?(pcmData)
+                        case .deepgram:
+                            // Send directly to Deepgram
+                            self.systemAudioClient?.sendPCM(pcmData)
+                        }
                     }
                     
                     print("[DEBUG] 🔧 SystemAudioCapture callback set")

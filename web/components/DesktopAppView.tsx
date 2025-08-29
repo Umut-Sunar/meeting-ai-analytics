@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { aiPrompts, users } from '../constants';
 
 const aiCues = [
@@ -8,12 +8,31 @@ const aiCues = [
     { icon: '🤝', text: 'They mentioned "scalability". Reassure them with our enterprise-grade infrastructure.' },
 ];
 
-const liveTranscript = [
-    { speaker: 'Them', text: "So, we're looking at the projections for next quarter, and the main concern is scalability.", translation: "Yani, gelecek çeyreğin projeksiyonlarına bakıyoruz ve asıl endişemiz ölçeklenebilirlik." },
-    { speaker: 'You', text: "That makes sense. Our enterprise-grade infrastructure is designed for high-demand scenarios. We've seen a 20% performance improvement for clients of your scale.", translation: "Bu mantıklı. Kurumsal düzeydeki altyapımız, yüksek talep senaryoları için tasarlanmıştır. Sizin ölçeğinizdeki müşteriler için %20'lik bir performans artışı gördük." },
-    { speaker: 'Them', text: "That's impressive. What about the integration phase? What does the timeline look like for that?", translation: "Bu etkileyici. Peki entegrasyon aşaması ne olacak? Bunun için zaman çizelgesi nasıl görünüyor?" },
-    { speaker: 'You', text: "Great question. Typically, we can get you fully integrated within 4-6 weeks, depending on your team's availability.", translation: "Harika bir soru. Genellikle, ekibinizin müsaitliğine bağlı olarak sizi 4-6 hafta içinde tam olarak entegre edebiliriz." },
-    { speaker: 'Them', text: "Okay, that fits within our schedule. The final piece of the puzzle is the budget.", translation: "Tamam, bu bizim programımıza uyuyor. Bulmacanın son parçası ise bütçe." },
+// WebSocket message types
+interface TranscriptMessage {
+    type: 'transcript_partial' | 'transcript_final';
+    meeting_id: string;
+    source: 'mic' | 'sys';
+    transcript: {
+        text: string;
+        is_final: boolean;
+        confidence?: number;
+    };
+    timestamp: string;
+}
+
+interface LiveTranscriptItem {
+    speaker: string;
+    text: string;
+    source: 'mic' | 'sys';
+    timestamp: number;
+    translation?: string;
+}
+
+// Initial mock data - will be replaced by real WebSocket data
+const initialLiveTranscript: LiveTranscriptItem[] = [
+    { speaker: 'Mikrofon', text: "Merhaba, toplantıya hoş geldiniz.", source: 'mic', timestamp: Date.now() - 5000 },
+    { speaker: 'Sistem Sesi', text: "Sunum başlıyor...", source: 'sys', timestamp: Date.now() - 3000 },
 ];
 
 const suggestedReplies = [
@@ -45,18 +64,28 @@ const languages = [
     { code: 'ko-KR', name: 'Korean' },
 ];
 
-const LiveTranscriptItem: React.FC<{item: {speaker: string, text: string, translation?: string}, showTranslation: boolean}> = ({item, showTranslation}) => {
-    const isYou = item.speaker === 'You';
+const LiveTranscriptItem: React.FC<{item: LiveTranscriptItem, showTranslation: boolean}> = ({item, showTranslation}) => {
+    const isMic = item.source === 'mic';
+    const sourceLabel = isMic ? '🎤' : '🔊';
+    const sourceColor = isMic ? 'border-blue-accent' : 'border-green-accent';
+    
     return (
-        <div className={`flex items-start gap-3 ${isYou ? 'flex-row-reverse' : ''}`}>
-             {!isYou && <img src="https://picsum.photos/seed/other/40/40" className="w-8 h-8 rounded-full mt-1" />}
-            <div className={`max-w-xs md:max-w-md p-3 rounded-xl ${isYou ? 'bg-blue-accent text-white' : 'bg-gray-700 text-gray-300'}`}>
+        <div className={`flex items-start gap-3`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 ${sourceColor} bg-gray-800`}>
+                {sourceLabel}
+            </div>
+            <div className={`max-w-xs md:max-w-md p-3 rounded-xl bg-gray-700 text-gray-300 border-l-4 ${isMic ? 'border-blue-accent' : 'border-green-accent'}`}>
+                <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-semibold text-gray-400">{item.speaker}</span>
+                    <span className="text-xs text-gray-500">
+                        {new Date(item.timestamp).toLocaleTimeString()}
+                    </span>
+                </div>
                 <p className="text-sm">{item.text}</p>
                 {showTranslation && item.translation && (
                     <p className="text-xs text-gray-400 italic mt-2 pt-2 border-t border-gray-500/50">{item.translation}</p>
                 )}
             </div>
-             {isYou && <img src="https://picsum.photos/seed/alex/40/40" className="w-8 h-8 rounded-full mt-1" />}
         </div>
     )
 }
@@ -93,7 +122,81 @@ const DesktopAppView: React.FC = () => {
     const [userInput, setUserInput] = useState('');
     const [meetingLanguage, setMeetingLanguage] = useState('English (US)');
 
+    // WebSocket ve transcript state
+    const [liveTranscript, setLiveTranscript] = useState<LiveTranscriptItem[]>(initialLiveTranscript);
+    const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
+    const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+    const wsRef = useRef<WebSocket | null>(null);
+
     const currentUser = users['user1'];
+
+    // WebSocket connection functions
+    const connectToBackend = () => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) return;
+        
+        setConnectionStatus('connecting');
+        
+        // Backend WebSocket endpoint
+        const wsUrl = 'ws://localhost:8000/api/v1/ws/transcript/test-meeting-001';
+        const ws = new WebSocket(wsUrl);
+        
+        ws.onopen = () => {
+            console.log('🟢 WebSocket connected to backend');
+            setConnectionStatus('connected');
+            setWsConnection(ws);
+            wsRef.current = ws;
+        };
+        
+        ws.onmessage = (event) => {
+            try {
+                const message: TranscriptMessage = JSON.parse(event.data);
+                
+                if (message.type === 'transcript_final') {
+                    const newItem: LiveTranscriptItem = {
+                        speaker: message.source === 'mic' ? 'Mikrofon' : 'Sistem Sesi',
+                        text: message.transcript.text,
+                        source: message.source,
+                        timestamp: new Date(message.timestamp).getTime(),
+                    };
+                    
+                    setLiveTranscript(prev => [...prev, newItem]);
+                }
+            } catch (error) {
+                console.error('WebSocket message parse error:', error);
+            }
+        };
+        
+        ws.onclose = () => {
+            console.log('🔴 WebSocket disconnected');
+            setConnectionStatus('disconnected');
+            setWsConnection(null);
+            wsRef.current = null;
+        };
+        
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            setConnectionStatus('disconnected');
+        };
+    };
+
+    const disconnectFromBackend = () => {
+        if (wsRef.current) {
+            wsRef.current.close();
+            wsRef.current = null;
+            setWsConnection(null);
+            setConnectionStatus('disconnected');
+        }
+    };
+
+    // Auto-connect when component mounts
+    useEffect(() => {
+        return () => {
+            // Cleanup on unmount
+            if (wsRef.current) {
+                wsRef.current.close();
+            }
+        };
+    }, []);
 
     const handleSendMessage = () => {
         if (userInput.trim() === '') return;
@@ -336,30 +439,61 @@ const DesktopAppView: React.FC = () => {
                                 {/* Right Column: Transcript */}
                                 <div className="lg:col-span-2 bg-gray-900/50 p-4 rounded-lg flex flex-col h-full">
                                     <div className="flex justify-between items-center mb-3 flex-shrink-0">
-                                        <h3 className="text-lg font-semibold text-white">Live Transcript</h3>
+                                        <div className="flex items-center gap-3">
+                                            <h3 className="text-lg font-semibold text-white">Live Transcript</h3>
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-2 h-2 rounded-full ${
+                                                    connectionStatus === 'connected' ? 'bg-green-500' : 
+                                                    connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' : 
+                                                    'bg-red-500'
+                                                }`}></div>
+                                                <span className="text-xs text-gray-400">
+                                                    {connectionStatus === 'connected' ? 'Backend Bağlı' : 
+                                                     connectionStatus === 'connecting' ? 'Bağlanıyor...' : 
+                                                     'Bağlı Değil'}
+                                                </span>
+                                                <button
+                                                    onClick={connectionStatus === 'connected' ? disconnectFromBackend : connectToBackend}
+                                                    className="text-xs px-2 py-1 rounded bg-gray-600 hover:bg-gray-500 text-white"
+                                                >
+                                                    {connectionStatus === 'connected' ? 'Disconnect' : 'Connect'}
+                                                </button>
+                                            </div>
+                                        </div>
                                         <Toggle isEnabled={showTranslation} onToggle={() => setShowTranslation(!showTranslation)} label="Show Translation" />
                                     </div>
-                                    <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-                                        {liveTranscript.map((item, index) => (
-                                            <React.Fragment key={index}>
-                                                <LiveTranscriptItem item={item} showTranslation={showTranslation} />
-                                                {item.speaker === 'Them' && isSuperModeOn && (
-                                                    <div className="my-4 ml-12">
-                                                        <h4 className="text-sm font-bold text-purple-accent mb-2 flex items-center gap-2">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 4.13a8 8 0 0 1 0 15.74"/><path d="M9 20.13a8 8 0 0 1 0-15.74"/><path d="M12 2v20"/><path d="M22 12H2"/></svg>
-                                                            Super Mode Suggestions
-                                                        </h4>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {suggestedReplies.map((reply, i) => (
-                                                                <button key={i} className="px-3 py-1.5 text-xs bg-gray-700 hover:bg-purple-accent hover:text-white rounded-full transition-colors">
-                                                                    {reply}
-                                                                </button>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </React.Fragment>
-                                        ))}
+                                    <div className="flex-1 grid grid-cols-2 gap-4 overflow-hidden">
+                                        {/* Mikrofon Column */}
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-blue-accent/30">
+                                                <span className="text-blue-accent">🎤</span>
+                                                <h4 className="text-sm font-semibold text-blue-accent">Mikrofon</h4>
+                                            </div>
+                                            <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+                                                {liveTranscript
+                                                    .filter(item => item.source === 'mic')
+                                                    .map((item, index) => (
+                                                        <LiveTranscriptItem key={`mic-${index}`} item={item} showTranslation={showTranslation} />
+                                                    ))
+                                                }
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Sistem Sesi Column */}
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-green-accent/30">
+                                                <span className="text-green-accent">🔊</span>
+                                                <h4 className="text-sm font-semibold text-green-accent">Sistem Sesi</h4>
+                                            </div>
+                                            <div className="flex-1 overflow-y-auto pr-2 space-y-3">
+                                                {liveTranscript
+                                                    .filter(item => item.source === 'sys')
+                                                    .map((item, index) => (
+                                                        <LiveTranscriptItem key={`sys-${index}`} item={item} showTranslation={showTranslation} />
+                                                    ))
+                                                }
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

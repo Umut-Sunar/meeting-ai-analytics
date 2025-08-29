@@ -3,11 +3,12 @@ import SwiftUI
 struct DesktopMainView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var controller = CaptureController()
+    @State private var showSettings = false
     
     var body: some View {
         VStack(spacing: 0) {
             // App Header
-            HeaderView()
+            HeaderView(showSettings: $showSettings)
             
             // Main Content
             if appState.meetingState == .preMeeting {
@@ -17,33 +18,34 @@ struct DesktopMainView: View {
             }
         }
         .background(Color(NSColor.controlBackgroundColor))
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+                .environmentObject(appState)
+        }
         .onAppear {
             checkInitialPermissions()
         }
     }
     
     private func checkInitialPermissions() {
+        // Check microphone permission
         PermissionsService.checkMicAuthorized { granted in
-            appState.isMicAuthorized = granted
-            
-            // Check screen recording permission asynchronously
-            Task {
-                if #available(macOS 13.0, *) {
-                    let screenPermission = await PermissionsService.checkScreenRecordingPermission()
-                    await MainActor.run {
-                        appState.isScreenAuthorized = screenPermission
-                    }
-                } else {
-                    await MainActor.run {
-                        appState.isScreenAuthorized = false
-                    }
-                }
+            Task { @MainActor in
+                appState.isMicAuthorized = granted
             }
+        }
+        
+        // Check screen recording permission using reliable async method
+        Task { @MainActor in
+            appState.isScreenAuthorized = await PermissionsService.hasScreenRecordingPermission()
+            appState.log("🚀 MacClient started successfully")
         }
     }
 }
 
 struct HeaderView: View {
+    @Binding var showSettings: Bool
+    
     var body: some View {
         HStack {
             HStack(spacing: 12) {
@@ -62,9 +64,21 @@ struct HeaderView: View {
             Spacer()
             
             HStack(spacing: 16) {
-                Text("macOS Native")
+                Text("Backend WebSocket Mode")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                
+                Button(action: {
+                    print("🔧 Settings button tapped")
+                    showSettings = true
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "gearshape.fill")
+                        Text("Settings")
+                    }
+                    .font(.caption)
+                }
+                .buttonStyle(.bordered)
                 
                 Button("Analytics") {
                     // Analytics action
@@ -198,14 +212,45 @@ struct PreMeetingView: View {
             .frame(maxWidth: 600)
             
             Button("Toplantıyı Başlat") {
-                if !appState.meetingName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    appState.meetingState = .inMeeting
-                    appState.clearTranscripts()
-                    appState.log("🚀 Toplantı başlatıldı: \(appState.meetingName)")
+                // Validate required fields
+                let name = appState.meetingName.trimmingCharacters(in: .whitespacesAndNewlines)
+                let meetingId = appState.meetingId.trimmingCharacters(in: .whitespacesAndNewlines)
+                let deviceId = appState.deviceId.trimmingCharacters(in: .whitespacesAndNewlines)
+                let backendURL = appState.backendURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                var validationErrors: [String] = []
+                
+                if name.isEmpty { validationErrors.append("Meeting Name") }
+                if meetingId.isEmpty { validationErrors.append("Meeting ID") }
+                if deviceId.isEmpty { validationErrors.append("Device ID") }
+                if backendURL.isEmpty { validationErrors.append("Backend URL") }
+                if appState.jwtToken.isEmpty { validationErrors.append("JWT Token") }
+                
+                if !validationErrors.isEmpty {
+                    appState.log("❌ Missing required fields: \(validationErrors.joined(separator: ", "))")
+                    appState.log("💡 Please check Settings for Backend URL and JWT Token")
+                    return
                 }
+                
+                if !appState.isMicAuthorized {
+                    appState.log("❌ Microphone permission required")
+                    return
+                }
+                
+                appState.meetingState = .inMeeting
+                appState.clearTranscripts()
+                appState.log("🚀 Meeting started: \(name)")
+                appState.log("📡 Backend: \(backendURL)")
+                appState.log("🆔 Meeting ID: \(meetingId)")
             }
             .buttonStyle(.borderedProminent)
-            .disabled(appState.meetingName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(
+                appState.meetingName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                appState.meetingId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                appState.deviceId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                appState.backendURLString.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                !appState.isMicAuthorized
+            )
             
             Spacer()
         }
@@ -335,109 +380,15 @@ struct InMeetingView: View {
                 }
                 .frame(minWidth: 300, maxWidth: 400)
                 
-                // Right Panel: Transcript
-                VStack(spacing: 0) {
-                    HStack {
-                        Text("Canlı Transkript")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                        
-                        Spacer()
-                        
-                        Toggle("Çeviri Göster", isOn: $appState.showTranslation)
-                            .toggleStyle(.switch)
-                    }
-                    .padding()
-                    .background(Color(NSColor.windowBackgroundColor))
-                    .overlay(
-                        Rectangle()
-                            .frame(height: 1)
-                            .foregroundColor(Color(NSColor.separatorColor)),
-                        alignment: .bottom
-                    )
-                    
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 12) {
-                            ForEach(appState.transcriptItems) { item in
-                                TranscriptItemView(item: item, showTranslation: appState.showTranslation)
-                            }
-                        }
-                        .padding()
-                    }
+                // Right Panel: Dual-Source Transcript
+                TranscriptView(appState: appState)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
             }
         }
     }
 }
 
-struct TranscriptItemView: View {
-    let item: TranscriptItem
-    let showTranslation: Bool
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            if !item.isYou {
-                Circle()
-                    .fill(Color.gray)
-                    .frame(width: 32, height: 32)
-                    .overlay(
-                        Text("S")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                    )
-            }
-            
-            VStack(alignment: item.isYou ? .trailing : .leading, spacing: 8) {
-                HStack {
-                    if !item.isYou {
-                        Text(item.speaker)
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Spacer()
-                    
-                    if item.isYou {
-                        Text(item.speaker)
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Text(item.text)
-                    .padding(12)
-                    .background(item.isYou ? Color.blue : Color(NSColor.controlBackgroundColor))
-                    .foregroundColor(item.isYou ? .white : .primary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                
-                if showTranslation, let translation = item.translation {
-                    Text(translation)
-                        .font(.caption)
-                        .italic()
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 12)
-                }
-            }
-            
-            if item.isYou {
-                Circle()
-                    .fill(Color.blue)
-                    .frame(width: 32, height: 32)
-                    .overlay(
-                        Text("Y")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                    )
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: item.isYou ? .trailing : .leading)
-    }
-}
+// Old TranscriptItemView removed - using new dual-source TranscriptView
 
 #Preview {
     DesktopMainView()

@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 
+@MainActor
 final class AppState: ObservableObject {
     // UI parity fields (mirrors web/DesktopView.tsx)
     @Published var meetingId: String = ""
@@ -9,6 +10,10 @@ final class AppState: ObservableObject {
     @Published var aiMode: String = "standard"  // "standard" | "super"
     @Published var captureMic: Bool = true
     @Published var captureSystem: Bool = true
+    
+    // === Backend connection settings ===
+    @Published var backendURLString: String = "ws://localhost:8000"  // dev default
+    @Published var jwtToken: String = ""  // Loaded from Keychain; updated via Settings
     
     // Meeting state
     @Published var meetingState: MeetingState = .preMeeting
@@ -19,8 +24,7 @@ final class AppState: ObservableObject {
     @Published var isScreenAuthorized: Bool = false
     @Published var isCapturing: Bool = false
     
-    // Transcript data
-    @Published var transcriptItems: [TranscriptItem] = []
+    // Translation settings
     @Published var showTranslation: Bool = false
     
     @Published var statusLines: [String] = []
@@ -31,42 +35,17 @@ final class AppState: ObservableObject {
     }
     
     func log(_ line: String) {
-        DispatchQueue.main.async {
-            let timestamp = DateFormatter.timeFormatter.string(from: Date())
-            self.statusLines.append("[\(timestamp)] \(line)")
-            if self.statusLines.count > 800 { 
-                self.statusLines.removeFirst() 
-            }
-        }
-    }
-    
-    func addTranscript(_ item: TranscriptItem) {
-        DispatchQueue.main.async {
-            self.transcriptItems.append(item)
+        let timestamp = DateFormatter.timeFormatter.string(from: Date())
+        self.statusLines.append("[\(timestamp)] \(line)")
+        if self.statusLines.count > 800 { 
+            self.statusLines.removeFirst() 
         }
     }
     
     func clearTranscripts() {
-        DispatchQueue.main.async {
-            self.transcriptItems.removeAll()
-        }
-    }
-}
-
-struct TranscriptItem: Identifiable {
-    let id = UUID()
-    let speaker: String
-    let text: String
-    let translation: String?
-    let timestamp: Date
-    let isYou: Bool
-    
-    init(speaker: String, text: String, translation: String? = nil, isYou: Bool = false) {
-        self.speaker = speaker
-        self.text = text
-        self.translation = translation
-        self.timestamp = Date()
-        self.isYou = isYou
+        // Note: Transcript management is now handled by TranscriptWebSocketManager
+        // This method is kept for compatibility but doesn't manage transcripts directly
+        log("🧹 Transcript clear requested")
     }
 }
 

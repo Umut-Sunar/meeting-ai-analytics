@@ -41,7 +41,7 @@ class PermissionManager: ObservableObject {
     // MARK: - Initialization
     
     init() {
-        self.bundleID = Bundle.main.bundleIdentifier ?? "com.dogan.audioassist"
+        self.bundleID = Bundle.main.bundleIdentifier ?? "com.meetingai.macclient"
         self.bundlePath = Bundle.main.bundlePath
         self.executablePath = Bundle.main.executablePath ?? "Unknown"
         self.isDevelopmentBuild = Bundle.main.bundlePath.contains("DerivedData")
@@ -54,8 +54,8 @@ class PermissionManager: ObservableObject {
         print("[PermissionManager] 🔧 Development build: \(isDevelopmentBuild)")
         print("[PermissionManager] 🍎 macOS Sequoia or later: \(isSequoiaOrLater)")
         
-        // Start with immediate permission check (detached task to avoid actor issues)
-        Task.detached { @MainActor in
+        // Start with immediate permission check (Task devralır @MainActor bağlamını)
+        Task { 
             await self.checkPermissionStatus()
             self.startPeriodicPermissionCheck()
         }
@@ -376,7 +376,7 @@ class PermissionManager: ObservableObject {
         }
         
         // Check for bundle identifier mismatches
-        let expectedBundleID = "com.dogan.audioassist"
+        let expectedBundleID = "com.meetingai.macclient"
         if bundleID != expectedBundleID {
             print("[PermissionManager] ⚠️ TCC Issue: Bundle ID mismatch")
             print("[PermissionManager] 📋 Expected: \(expectedBundleID)")
@@ -412,7 +412,7 @@ class PermissionManager: ObservableObject {
     private func provideTCCCacheSolutions() async {
         print("[PermissionManager] 💡 TCC Cache Solutions:")
         print("[PermissionManager] 💡 1. IMMEDIATE: Run fix_screen_recording_permissions.sh")
-        print("[PermissionManager] 💡 2. MANUAL: Copy app to /Applications/AudioAssist.app")
+        print("[PermissionManager] 💡 2. MANUAL: Copy app to /Applications/MacClient.app")
         print("[PermissionManager] 💡 3. RESET: sudo tccutil reset ScreenCapture \(bundleID)")
         print("[PermissionManager] 💡 4. REFRESH: sudo killall tccd")
         
@@ -561,7 +561,7 @@ class PermissionManager: ObservableObject {
             echo "📝 Based on Apple Developer Community solutions"
             
             # Get bundle identifier
-            BUNDLE_ID="com.dogan.audioassist"
+            BUNDLE_ID="com.meetingai.macclient"
             echo "🎯 Target Bundle ID: $BUNDLE_ID"
             
             # Step 1: Remove TCC entries for our app
@@ -578,14 +578,14 @@ class PermissionManager: ObservableObject {
             
             # Step 4: Clear Xcode DerivedData for this project
             echo "🧹 Clearing Xcode DerivedData..."
-            rm -rf ~/Library/Developer/Xcode/DerivedData/AudioAssist-* 2>/dev/null || true
+            rm -rf ~/Library/Developer/Xcode/DerivedData/MacClient-* 2>/dev/null || true
             
             echo "✅ Automatic TCC reset completed"
             echo "🔔 Please restart the app to test the fix"
             """
             
             // Write script to temporary file
-            let tempScriptURL = FileManager.default.temporaryDirectory.appendingPathComponent("audioassist_tcc_reset.sh")
+            let tempScriptURL = FileManager.default.temporaryDirectory.appendingPathComponent("macclient_tcc_reset.sh")
             
             do {
                 try scriptContent.write(to: tempScriptURL, atomically: true, encoding: .utf8)
@@ -624,6 +624,13 @@ class PermissionManager: ObservableObject {
             print("[PermissionManager] 🔍 System Settings permission check failed: \(error)")
             return false
         }
+    }
+    
+    // MARK: - Legacy compatibility methods
+    
+    /// Legacy method for compatibility with existing code
+    func requestPermission() async -> Bool {
+        return await requestPermissionWithTCCCacheHandling()
     }
 }
 

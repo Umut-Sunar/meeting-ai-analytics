@@ -1,103 +1,190 @@
 import Foundation
-import Combine
 
+/// Coordinates audio capture and routes PCM data to backend WebSocket
 final class CaptureController: ObservableObject {
-    private var cancellables = Set<AnyCancellable>()
+    
+    // MARK: - Properties
+    
     private var audioEngine: AudioEngine?
-
+    
+    // 🔵 İki ayrı WebSocket - Mic ve System için
+    private let wsMic = BackendIngestWS()
+    private let wsSys = BackendIngestWS()
+    
+    // MARK: - Public Methods
+    
+    @MainActor
     func start(appState: AppState) {
-        appState.log("🚀 Start requested")
-
-        // 1) İzin kontrolü
-        guard appState.isMicAuthorized else {
-            appState.log("❌ Başlatılamadı: Mikrofon izni yok.")
-            return
-        }
-
-        // 2) API Key kontrolü
-        if !APIKeyManager.hasValidAPIKey() {
-            appState.log("❌ Başlatılamadı: DEEPGRAM_API_KEY eksik.")
-            return
-        }
-
-        // 3) AudioEngine oluştur
-        let config = makeDGConfig()
-        audioEngine = AudioEngine(config: config)
+        guard !appState.isCapturing else { return }
         
-        // 4) Event handler'ı ayarla
-        audioEngine?.onEvent = { [weak self] event in
-            self?.handleAudioEngineEvent(event, appState: appState)
+        Task {
+            await startAsync(appState: appState)
         }
-
-        // 5) Başlat
+    }
+    
+    @MainActor
+    private func startAsync(appState: AppState) async {
+        // Validasyon
+        guard !appState.meetingId.isEmpty,
+              !appState.deviceId.isEmpty,
+              !appState.backendURLString.isEmpty else {
+            appState.log("❌ Meeting/Device/Backend boş olamaz")
+            return
+        }
+        
+        // JWT
+        if appState.jwtToken.isEmpty {
+            let loadedToken = KeychainStore.loadJWT()
+            appState.jwtToken = loadedToken
+        }
+        
+        appState.log("🚀 Starting capture with backend WebSocket...")
+        
+        // SYSTEM WebSocket için asenkron permission check
+        if appState.captureSystem {
+            let hasPermission = await PermissionsService.hasScreenRecordingPermission()
+            guard hasPermission else {
+                appState.log("❌ Screen Recording izni yok. Ayarlar açılıyor...")
+                PermissionsService.openScreenRecordingPrefs()
+                return
+            }
+        }
+        
+        // PCM bridge kurulmadan önce AudioEngine
+        let config = DGConfig(
+            apiKey: "dummy", // Backend kullandığımız için dummy (not used in backend mode)
+            sampleRate: 48000,
+            channels: 1,
+            language: appState.language
+        )
+        
+        // Backend-only mode: Deepgram clients disabled
+        audioEngine = AudioEngine(config: config, transportMode: .backendWS)
+        
+        // 🔌 PCM Bridge: MIC
+        audioEngine?.onMicPCM = { [weak self] data in
+            self?.wsMic.sendPCM(data)
+        }
+        
+        // 🔌 PCM Bridge: SYSTEM
+        audioEngine?.onSystemPCM = { [weak self] data in
+            self?.wsSys.sendPCM(data)
+        }
+        
+        // WebSocket callbacks (enhanced logging)
+        setupWebSocketCallbacks(for: wsMic, appState: appState, source: "MIC")
+        setupWebSocketCallbacks(for: wsSys, appState: appState, source: "SYS")
+        
+        // MIC WebSocket (isteğe bağlı)
+        if appState.captureMic {
+            let hs = BackendIngestWS.Handshake(
+                source: "mic",
+                sample_rate: 48000,
+                channels: 1,
+                language: appState.language,
+                ai_mode: appState.aiMode,
+                device_id: appState.deviceId + "-mic"
+            )
+            wsMic.open(
+                baseURL: appState.backendURLString,
+                meetingId: appState.meetingId,
+                source: "mic",
+                jwtToken: appState.jwtToken,
+                handshake: hs
+            )
+        }
+        
+        // SYSTEM WebSocket (isteğe bağlı) - Permission check zaten yukarıda yapıldı
+        if appState.captureSystem {
+            let hs = BackendIngestWS.Handshake(
+                source: "system",
+                sample_rate: 48000,
+                channels: 1,
+                language: appState.language,
+                ai_mode: appState.aiMode,
+                device_id: appState.deviceId + "-sys"
+            )
+            wsSys.open(
+                baseURL: appState.backendURLString,
+                meetingId: appState.meetingId,
+                source: "sys",
+                jwtToken: appState.jwtToken,
+                handshake: hs
+            )
+        }
+        
+        // AudioEngine event handling
+                audioEngine?.onEvent = { [weak appState] event in
+            Task { @MainActor in
+                switch event {
+                case .microphoneConnected:
+                    appState?.log("🎤 Microphone connected")
+                case .systemAudioConnected:
+                    appState?.log("🔊 System audio connected")
+                case .microphoneDisconnected:
+                    appState?.log("🎤 Microphone disconnected")
+                case .systemAudioDisconnected:
+                    appState?.log("🔊 System audio disconnected")
+                case .error(let error, let source):
+                    appState?.log("❌ Audio Error (\(source.debugId)): \(error.localizedDescription)")
+                default:
+                    break // Ignore transcript events since we're using backend WS
+                }
+            }
+        }
+        
+        // Start AudioEngine
         audioEngine?.start()
+        
         appState.isCapturing = true
-        appState.log("✅ Capture started.")
+        appState.log("✅ Audio capture started (Backend WS mode, mic:\(appState.captureMic), sys:\(appState.captureSystem))")
     }
-
+    
+    @MainActor
     func stop(appState: AppState) {
-        appState.log("🛑 Stop requested")
-        audioEngine?.stop()
-        appState.isCapturing = false
-        appState.log("✅ Capture stopped.")
-    }
-
-    // MARK: - AudioEngine Event Handling
-    private func handleAudioEngineEvent(_ event: AudioEngineEvent, appState: AppState) {
-        DispatchQueue.main.async {
-            switch event {
-            case .microphoneConnected:
-                appState.log("🎤 Mikrofon Deepgram'e bağlandı.")
-            case .systemAudioConnected:
-                appState.log("🔊 Sistem sesi Deepgram'e bağlandı.")
-            case .microphoneDisconnected:
-                appState.log("🎤 Mikrofon Deepgram bağlantısı kesildi.")
-            case .systemAudioDisconnected:
-                appState.log("🔊 Sistem sesi Deepgram bağlantısı kesildi.")
-            case .error(let error, let source):
-                appState.log("❌ \(source.debugId) Hatası: \(error.localizedDescription)")
-            case .results(let json, let source):
-                self.parseDeepgramResults(json, source: source, appState: appState)
-            case .metadata(let json, let source):
-                appState.log("ℹ️ \(source.debugId) Metadata: \(json.prefix(100))...")
-            case .finalized(let json, let source):
-                appState.log("✅ \(source.debugId) Finalize: \(json.prefix(100))...")
-                self.parseDeepgramResults(json, source: source, appState: appState, isFinal: true)
-            }
+        guard appState.isCapturing else { return }
+        
+        Task {
+            appState.log("🛑 Stopping capture...")
+            
+            // Stop audio engine first
+            audioEngine?.stop()
+            audioEngine = nil
+            
+            // Close WebSockets with finalize
+            wsMic.close(sendFinalize: true)
+            wsSys.close(sendFinalize: true)
+            
+            appState.isCapturing = false
+            appState.log("✅ Capture stopped")
         }
     }
-
-    private func parseDeepgramResults(_ jsonString: String, source: AudioSourceType, appState: AppState, isFinal: Bool = false) {
-        do {
-            guard let jsonData = jsonString.data(using: .utf8) else {
-                appState.log("❌ JSON data conversion failed.")
-                return
+    
+    // MARK: - Private Helpers
+    
+    private func setupWebSocketCallbacks(for ws: BackendIngestWS, appState: AppState, source: String) {
+        ws.onLog = { [weak appState] message in
+            Task { @MainActor in
+                appState?.log("[\(source)] \(message)")
             }
-            let json = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any]
-
-            guard let results = json?["channel"] as? [String: Any],
-                  let alternatives = results["alternatives"] as? [[String: Any]],
-                  let firstAlternative = alternatives.first,
-                  let transcript = firstAlternative["transcript"] as? String,
-                  !transcript.isEmpty else {
-                return
+        }
+        
+        ws.onError = { [weak appState] error in
+            Task { @MainActor in
+                appState?.log("❌ [\(source)] WS Error: \(error)")
             }
-
-            let speaker = (source == .microphone) ? "You" : "Them"
-            appState.log("📝 \(isFinal ? "Final" : "Partial") (\(source.debugId)): \(transcript)")
-
-            // Add to transcript items if final
-            if isFinal {
-                let transcriptItem = TranscriptItem(
-                    speaker: speaker,
-                    text: transcript,
-                    translation: nil,
-                    isYou: source == .microphone
-                )
-                appState.addTranscript(transcriptItem)
+        }
+        
+        ws.onConnected = { [weak appState] in
+            Task { @MainActor in
+                appState?.log("✅ [\(source)] WebSocket connected")
             }
-        } catch {
-            appState.log("❌ JSON parse error: \(error.localizedDescription)")
+        }
+        
+        ws.onDisconnected = { [weak appState] in
+            Task { @MainActor in
+                appState?.log("🔌 [\(source)] WebSocket disconnected")
+            }
         }
     }
 }

@@ -14,8 +14,7 @@ final class SystemAudioCaptureSC: NSObject, SCStreamOutput, SCStreamDelegate {
     private let audioQueue = DispatchQueue(label: "sc.audio.queue")
     private var converter: AVAudioConverter?
     
-    // Enhanced permission management
-    private var permissionManager: PermissionManager?
+    // Enhanced permission management handled by PermissionsService
     
     // 🚨 CRITICAL FIX: Separate output handlers to prevent circular reference
     // This fixes the SCStream frame dropping issue identified in Apple Developer Forums
@@ -29,6 +28,9 @@ final class SystemAudioCaptureSC: NSObject, SCStreamOutput, SCStreamDelegate {
     // 🚨 CRASH PREVENTION: Error tracking
     private var consecutiveErrors: Int = 0
     private let maxConsecutiveErrors = 5
+    
+    // Debug log throttling
+    private var debugLogCounter = 0
     private var lastErrorTime: Date?
     private let errorCooldownInterval: TimeInterval = 10.0 // 10 seconds
     
@@ -106,9 +108,7 @@ final class SystemAudioCaptureSC: NSObject, SCStreamOutput, SCStreamDelegate {
         
         // References'ları temizle
         streamOutputHandler = nil
-        videoOutputHandler = nil
         converter = nil
-        permissionManager = nil
         
         // 🚨 CRASH PREVENTION: Reset error tracking
         consecutiveErrors = 0
@@ -122,59 +122,29 @@ final class SystemAudioCaptureSC: NSObject, SCStreamOutput, SCStreamDelegate {
 
     // MARK: - Public
     
-    /// Get current permission status from the permission manager
+    /// Get current permission status using PermissionsService (async)
     func hasPermission() async -> Bool {
-        guard let manager = permissionManager else {
-            print("[SC] ⚠️ Permission manager not initialized")
-            return false
-        }
-        
-        return await MainActor.run { manager.hasScreenRecordingPermission }
+        return await PermissionsService.hasScreenRecordingPermission()
     }
     
-    /// Request permission using the enhanced permission manager
-    func requestPermission() async -> Bool {
-        guard let manager = permissionManager else {
-            print("[SC] ⚠️ Permission manager not initialized")
-            return false
-        }
-        
-        return await manager.requestPermissionWithGuidance()
+    /// Request permission using PermissionsService
+    func requestPermission() -> Bool {
+        return PermissionsService.requestScreenRecordingPermission()
     }
 
     func start() async throws {
-        print("[SC] �� Starting SystemAudioCaptureSC...")
+        print("[SC] ▶️ Starting SystemAudioCaptureSC...")
         
-        // Initialize permission manager if not already done
-        if permissionManager == nil {
-            await MainActor.run {
-                permissionManager = PermissionManager()
-            }
-            // Give permission manager time to initialize
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-        }
-        
-        // Check permissions using enhanced manager
-        guard let manager = permissionManager else {
-            throw NSError(domain: "SC", code: -3, 
-                         userInfo: [NSLocalizedDescriptionKey: "Permission manager initialization failed"])
-        }
-        
-        await manager.checkPermissionStatus()
-        let hasPermission = await MainActor.run { manager.hasScreenRecordingPermission }
-        
-        if !hasPermission {
-            print("[SC] ❌ Permission denied - attempting to request...")
-            
-            // Try to request permission
-            let granted = await manager.requestPermissionWithGuidance()
-            guard granted else {
-                let error = NSError(domain: "SC", code: -2, 
-                                  userInfo: [NSLocalizedDescriptionKey: "Screen recording permission denied"])
-                print("[SC] ❌ Permission request failed: \(error.localizedDescription)")
-                throw error
-            }
-            print("[SC] ✅ Permission granted after request - continuing...")
+        // 1) Asenkron izin kontrolü - SCShareableContent kullanır
+        guard await PermissionsService.hasScreenRecordingPermission() else {
+            print("[SC] ❌ Screen Recording OFF – opening System Settings")
+            PermissionsService.openScreenRecordingPrefs()
+            throw NSError(
+                domain: "SC", code: -3,
+                userInfo: [NSLocalizedDescriptionKey:
+                    "Screen recording permission required. Opened System Settings. " +
+                    "After granting, quit and relaunch the app."]
+            )
         }
         
         print("[SC] 🚀 requesting shareable content…")
@@ -211,20 +181,31 @@ final class SystemAudioCaptureSC: NSObject, SCStreamOutput, SCStreamDelegate {
         
         // 🚨 CRITICAL FIX: Use dedicated output handlers to prevent circular reference
         self.streamOutputHandler = StreamOutputHandler(parent: self)
-        self.videoOutputHandler = VideoOutputHandler()
+        // videoOutputHandler kaldırıldı - sadece ses yakalama için gereksiz
         
-        print("[SC] 🔧 Adding audio output handler...")
-        try s.addStreamOutput(self.streamOutputHandler!, type: .audio, sampleHandlerQueue: audioQueue)
-        
-        print("[SC] 🔧 Adding video output handler (to prevent frame drops)...")
-        let videoQueue = DispatchQueue(label: "video.output.queue", qos: .userInitiated)
-        try s.addStreamOutput(self.videoOutputHandler!, type: .screen, sampleHandlerQueue: videoQueue)
-        
-        print("[SC] 🔧 Starting capture...")
-        try await s.startCapture()
-        self.stream = s
-        
-        print("[SC] ✅ SystemAudioCaptureSC started successfully!")
+        do {
+            print("[SC] 🔧 Adding audio output handler...")
+            try s.addStreamOutput(self.streamOutputHandler!, type: .audio, sampleHandlerQueue: audioQueue)
+            // Video output handler kaldırıldı - sadece ses yakalama için gereksiz
+
+            print("[SC] 🔧 Starting capture...")
+            try await s.startCapture()  // İzin reddedilirse burada SCStreamError.userDeclined gelir
+            self.stream = s
+            print("[SC] ✅ SystemAudioCaptureSC started successfully!")
+        } catch {
+            let ns = error as NSError
+            if ns.domain == "com.apple.ScreenCaptureKit.SCStreamErrorDomain", ns.code == -3801 {
+                // SCStreamError.userDeclined - TCC reddi
+                print("[SC] 🚨 CONFIRMED: Permission denied (TCC error -3801)")
+                throw NSError(
+                    domain: "SC", code: -3801,
+                    userInfo: [NSLocalizedDescriptionKey:
+                        "Screen Recording permission denied or not yet effective. " +
+                        "If you have just granted it, QUIT the app completely and relaunch."]
+                )
+            }
+            throw error
+        }
         print("[SC] 🎧 System will automatically restart when audio output device changes (e.g., AirPods)")
     }
 
@@ -237,7 +218,6 @@ final class SystemAudioCaptureSC: NSObject, SCStreamOutput, SCStreamDelegate {
         
         // Release handler references
         streamOutputHandler = nil
-        videoOutputHandler = nil
         
         print("[SC] ⏹️ stopped")
     }
@@ -254,18 +234,22 @@ final class SystemAudioCaptureSC: NSObject, SCStreamOutput, SCStreamDelegate {
             return 
         }
         
-        // 🔍 DEBUG: Log audio data reception
-        let sampleCount = CMSampleBufferGetNumSamples(sampleBuffer)
-        print("[SC] 🎵 Received audio: \(sampleCount) samples")
+        // 🔍 DEBUG: Throttled logging (every 100th frame)
+        debugLogCounter += 1
+        if debugLogCounter % 100 == 0 {
+            let sampleCount = CMSampleBufferGetNumSamples(sampleBuffer)
+            print("[SC] 🎵 Processed \(debugLogCounter) audio frames (last: \(sampleCount) samples)")
+        }
         
         // Simple PCM extraction for now
         if let rawPCMData = extractSimplePCMData(from: sampleBuffer) {
-            print("[SC] 📤 Sending \(rawPCMData.count) bytes to callback")
             DispatchQueue.main.async { [weak self] in
                 self?.onPCM16k?(rawPCMData)
             }
         } else {
-            print("[SC] ❌ Failed to extract PCM data")
+            if debugLogCounter % 50 == 0 { // Log errors less frequently
+                print("[SC] ❌ Failed to extract PCM data (frame \(debugLogCounter))")
+            }
         }
     }
 

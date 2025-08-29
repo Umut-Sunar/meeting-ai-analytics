@@ -12,39 +12,47 @@
 		A1000001000000000000003A /* PermissionsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000003B /* PermissionsService.swift */; };
 		A1000001000000000000004A /* CaptureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000004B /* CaptureController.swift */; };
 		A1000001000000000000005A /* DesktopMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000005B /* DesktopMainView.swift */; };
-		A1000001000000000000006A /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000006B /* AudioEngine.swift */; };
-		A1000001000000000000007A /* DeepgramClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000007B /* DeepgramClient.swift */; };
-		A1000001000000000000008A /* LanguageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000008B /* LanguageManager.swift */; };
-		A1000001000000000000009A /* MicCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000009B /* MicCapture.swift */; };
-		A100000100000000000000AA /* SystemAudioCaptureSC.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000AB /* SystemAudioCaptureSC.swift */; };
-		A100000100000000000000BA /* AudioSourceType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000BB /* AudioSourceType.swift */; };
-		A100000100000000000000CA /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000CB /* PermissionManager.swift */; };
-		A100000100000000000000DA /* APIKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000DB /* APIKeyManager.swift */; };
-		A100000100000000000000EA /* Resampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000EB /* Resampler.swift */; };
+		A1000001000000000000006A /* BackendIngestWS.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000006B /* BackendIngestWS.swift */; };
+		A1000001000000000000007A /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000007B /* KeychainStore.swift */; };
+		A1000001000000000000008A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000008B /* SettingsView.swift */; };
+		A1000001000000000000008C /* TranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000008D /* TranscriptView.swift */; };
+		A1000001000000000000009A /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001000000000000009B /* AudioEngine.swift */; };
+		A100000100000000000000AA /* DeepgramClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000AB /* DeepgramClient.swift */; };
+		A100000100000000000000BA /* LanguageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000BB /* LanguageManager.swift */; };
+		A100000100000000000000CA /* MicCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000CB /* MicCapture.swift */; };
+		A100000100000000000000DA /* SystemAudioCaptureSC.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000DB /* SystemAudioCaptureSC.swift */; };
+		A100000100000000000000EA /* AudioSourceType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000EB /* AudioSourceType.swift */; };
+		A100000100000000000000FA /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000100000000000000FB /* PermissionManager.swift */; };
+		A10000010000000000000GA /* APIKeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000010000000000000GB /* APIKeyManager.swift */; };
+		A10000010000000000000HA /* Resampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000010000000000000HB /* Resampler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		A100000100000000000000FB /* MacClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000001000000000000001B /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		A1000001000000000000002B /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		A1000001000000000000003B /* PermissionsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsService.swift; sourceTree = "<group>"; };
 		A1000001000000000000004B /* CaptureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureController.swift; sourceTree = "<group>"; };
 		A1000001000000000000005B /* DesktopMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopMainView.swift; sourceTree = "<group>"; };
-		A1000001000000000000006B /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
-		A1000001000000000000007B /* DeepgramClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepgramClient.swift; sourceTree = "<group>"; };
-		A1000001000000000000008B /* LanguageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageManager.swift; sourceTree = "<group>"; };
-		A1000001000000000000009B /* MicCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicCapture.swift; sourceTree = "<group>"; };
-		A100000100000000000000AB /* SystemAudioCaptureSC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioCaptureSC.swift; sourceTree = "<group>"; };
-		A100000100000000000000BB /* AudioSourceType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSourceType.swift; sourceTree = "<group>"; };
-		A100000100000000000000CB /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
-		A100000100000000000000DB /* APIKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeyManager.swift; sourceTree = "<group>"; };
-		A100000100000000000000EB /* Resampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Resampler.swift; sourceTree = "<group>"; };
-		A100000100000000000000FB /* MacClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A100000100000000000001FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Resources/Info.plist"; sourceTree = "<group>"; };
-		A100000100000000000002FB /* Entitlements.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Resources/Entitlements.plist"; sourceTree = "<group>"; };
+		A1000001000000000000006B /* BackendIngestWS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendIngestWS.swift; sourceTree = "<group>"; };
+		A1000001000000000000007B /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		A1000001000000000000008B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A1000001000000000000008D /* TranscriptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptView.swift; sourceTree = "<group>"; };
+		A1000001000000000000009B /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
+		A100000100000000000000AB /* DeepgramClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepgramClient.swift; sourceTree = "<group>"; };
+		A100000100000000000000BB /* LanguageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageManager.swift; sourceTree = "<group>"; };
+		A100000100000000000000CB /* MicCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicCapture.swift; sourceTree = "<group>"; };
+		A100000100000000000000DB /* SystemAudioCaptureSC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioCaptureSC.swift; sourceTree = "<group>"; };
+		A100000100000000000000EB /* AudioSourceType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSourceType.swift; sourceTree = "<group>"; };
+		A100000100000000000000FB /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
+		A10000010000000000000GB /* APIKeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeyManager.swift; sourceTree = "<group>"; };
+		A10000010000000000000HB /* Resampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Resampler.swift; sourceTree = "<group>"; };
+		A10000010000000000000IB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Resources/Info.plist"; sourceTree = "<group>"; };
+		A10000010000000000000JB /* Entitlements.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Resources/Entitlements.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A100000100000000000003FB /* Frameworks */ = {
+		A10000010000000000000KB /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -54,15 +62,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		A100000100000000000004FB = {
+		A10000010000000000000LB = {
 			isa = PBXGroup;
 			children = (
-				A100000100000000000005FB /* MacClient */,
-				A100000100000000000006FB /* Products */,
+				A10000010000000000000MB /* MacClient */,
+				A10000010000000000000NB /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		A100000100000000000005FB /* MacClient */ = {
+		A10000010000000000000MB /* MacClient */ = {
 			isa = PBXGroup;
 			children = (
 				A1000001000000000000001B /* App.swift */,
@@ -70,12 +78,15 @@
 				A1000001000000000000003B /* PermissionsService.swift */,
 				A1000001000000000000004B /* CaptureController.swift */,
 				A1000001000000000000005B /* DesktopMainView.swift */,
-				A100000100000000000007FB /* AudioAssist_V1_Sources */,
-				A100000100000000000008FB /* Resources */,
+				A10000010000000000000OB /* Networking */,
+				A10000010000000000000PB /* Security */,
+				A10000010000000000000QB /* Views */,
+				A10000010000000000000RB /* AudioAssist_V1_Sources */,
+				A10000010000000000000SB /* Resources */,
 			);
 			sourceTree = "<group>";
 		};
-		A100000100000000000006FB /* Products */ = {
+		A10000010000000000000NB /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				A100000100000000000000FB /* MacClient.app */,
@@ -83,40 +94,65 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		A100000100000000000007FB /* AudioAssist_V1_Sources */ = {
+		A10000010000000000000OB /* Networking */ = {
 			isa = PBXGroup;
 			children = (
-				A1000001000000000000006B /* AudioEngine.swift */,
-				A1000001000000000000007B /* DeepgramClient.swift */,
-				A1000001000000000000008B /* LanguageManager.swift */,
-				A1000001000000000000009B /* MicCapture.swift */,
-				A100000100000000000000AB /* SystemAudioCaptureSC.swift */,
-				A100000100000000000000BB /* AudioSourceType.swift */,
-				A100000100000000000000CB /* PermissionManager.swift */,
-				A100000100000000000000DB /* APIKeyManager.swift */,
-				A100000100000000000000EB /* Resampler.swift */,
+				A1000001000000000000006B /* BackendIngestWS.swift */,
+			);
+			path = Networking;
+			sourceTree = "<group>";
+		};
+		A10000010000000000000PB /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001000000000000007B /* KeychainStore.swift */,
+			);
+			path = Security;
+			sourceTree = "<group>";
+		};
+		A10000010000000000000QB /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001000000000000008B /* SettingsView.swift */,
+				A1000001000000000000008D /* TranscriptView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A10000010000000000000RB /* AudioAssist_V1_Sources */ = {
+			isa = PBXGroup;
+			children = (
+				A1000001000000000000009B /* AudioEngine.swift */,
+				A100000100000000000000AB /* DeepgramClient.swift */,
+				A100000100000000000000BB /* LanguageManager.swift */,
+				A100000100000000000000CB /* MicCapture.swift */,
+				A100000100000000000000DB /* SystemAudioCaptureSC.swift */,
+				A100000100000000000000EB /* AudioSourceType.swift */,
+				A100000100000000000000FB /* PermissionManager.swift */,
+				A10000010000000000000GB /* APIKeyManager.swift */,
+				A10000010000000000000HB /* Resampler.swift */,
 			);
 			path = AudioAssist_V1_Sources;
 			sourceTree = "<group>";
 		};
-		A100000100000000000008FB /* Resources */ = {
+		A10000010000000000000SB /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				A100000100000000000001FB /* Info.plist */,
-				A100000100000000000002FB /* Entitlements.plist */,
+				A10000010000000000000IB /* Info.plist */,
+				A10000010000000000000JB /* Entitlements.plist */,
 			);
-			name = Resources;
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A100000100000000000009FB /* MacClient */ = {
+		A10000010000000000000TB /* MacClient */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A10000010000000000000AFB /* Build configuration list for PBXNativeTarget "MacClient" */;
+			buildConfigurationList = A10000010000000000000UB /* Build configuration list for PBXNativeTarget "MacClient" */;
 			buildPhases = (
-				A10000010000000000000BFB /* Sources */,
-				A100000100000000000003FB /* Frameworks */,
+				A10000010000000000000VB /* Sources */,
+				A10000010000000000000KB /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -130,19 +166,19 @@
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		A10000010000000000000CFB /* Project object */ = {
+		A10000010000000000000WB /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
-					A100000100000000000009FB = {
+					A10000010000000000000TB = {
 						CreatedOnToolsVersion = 15.0;
 					};
 				};
 			};
-			buildConfigurationList = A10000010000000000000DFB /* Build configuration list for PBXProject "MacClient" */;
+			buildConfigurationList = A10000010000000000000XB /* Build configuration list for PBXProject "MacClient" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -150,18 +186,18 @@
 				en,
 				Base,
 			);
-			mainGroup = A100000100000000000004FB;
-			productRefGroup = A100000100000000000006FB /* Products */;
+			mainGroup = A10000010000000000000LB;
+			productRefGroup = A10000010000000000000NB /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A100000100000000000009FB /* MacClient */,
+				A10000010000000000000TB /* MacClient */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A10000010000000000000BFB /* Sources */ = {
+		A10000010000000000000VB /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -170,22 +206,26 @@
 				A1000001000000000000003A /* PermissionsService.swift in Sources */,
 				A1000001000000000000004A /* CaptureController.swift in Sources */,
 				A1000001000000000000005A /* DesktopMainView.swift in Sources */,
-				A1000001000000000000006A /* AudioEngine.swift in Sources */,
-				A1000001000000000000007A /* DeepgramClient.swift in Sources */,
-				A1000001000000000000008A /* LanguageManager.swift in Sources */,
-				A1000001000000000000009A /* MicCapture.swift in Sources */,
-				A100000100000000000000AA /* SystemAudioCaptureSC.swift in Sources */,
-				A100000100000000000000BA /* AudioSourceType.swift in Sources */,
-				A100000100000000000000CA /* PermissionManager.swift in Sources */,
-				A100000100000000000000DA /* APIKeyManager.swift in Sources */,
-				A100000100000000000000EA /* Resampler.swift in Sources */,
+				A1000001000000000000006A /* BackendIngestWS.swift in Sources */,
+				A1000001000000000000007A /* KeychainStore.swift in Sources */,
+				A1000001000000000000008A /* SettingsView.swift in Sources */,
+				A1000001000000000000008C /* TranscriptView.swift in Sources */,
+				A1000001000000000000009A /* AudioEngine.swift in Sources */,
+				A100000100000000000000AA /* DeepgramClient.swift in Sources */,
+				A100000100000000000000BA /* LanguageManager.swift in Sources */,
+				A100000100000000000000CA /* MicCapture.swift in Sources */,
+				A100000100000000000000DA /* SystemAudioCaptureSC.swift in Sources */,
+				A100000100000000000000EA /* AudioSourceType.swift in Sources */,
+				A100000100000000000000FA /* PermissionManager.swift in Sources */,
+				A10000010000000000000GA /* APIKeyManager.swift in Sources */,
+				A10000010000000000000HA /* Resampler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		A10000010000000000000EFB /* Debug */ = {
+		A10000010000000000000YB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -207,17 +247,23 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
-		A10000010000000000000FFB /* Release */ = {
+		A10000010000000000000ZB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -233,15 +279,22 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};
 			name = Release;
 		};
-		A100000100000000000010FB /* Debug */ = {
+		A100000100000000000001C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "Resources/Entitlements.plist";
@@ -256,15 +309,15 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.meetingai.macclient;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = MacClient;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
-		A100000100000000000011FB /* Release */ = {
+		A100000100000000000002C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "Resources/Entitlements.plist";
@@ -279,9 +332,9 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.meetingai.macclient;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = MacClient;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -290,25 +343,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A10000010000000000000AFB /* Build configuration list for PBXNativeTarget "MacClient" */ = {
+		A10000010000000000000UB /* Build configuration list for PBXNativeTarget "MacClient" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A100000100000000000010FB /* Debug */,
-				A100000100000000000011FB /* Release */,
+				A100000100000000000001C /* Debug */,
+				A100000100000000000002C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A10000010000000000000DFB /* Build configuration list for PBXProject "MacClient" */ = {
+		A10000010000000000000XB /* Build configuration list for PBXProject "MacClient" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A10000010000000000000EFB /* Debug */,
-				A10000010000000000000FFB /* Release */,
+				A10000010000000000000YB /* Debug */,
+				A10000010000000000000ZB /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = A10000010000000000000CFB /* Project object */;
+	rootObject = A10000010000000000000WB /* Project object */;
 }

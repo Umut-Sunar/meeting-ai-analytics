@@ -1,0 +1,14 @@
+24-HOUR JWT TOKEN FOR BACKEND
+=====================================
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTAwMSIsInRlbmFudF9pZCI6InRlc3QtdGVuYW50LTAwMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzU2NDkzNDAwLCJpYXQiOjE3NTY0MDcwMDAsImF1ZCI6Im1lZXRpbmdzIiwiaXNzIjoib3VyLWFwcCJ9.3kVZX-YNYX8VcH-L7mKJgEfPNh9_XyY6r4QrMvZ8QXE
+
+Valid for: 24 hours (expires 2025-08-29 20:50)
+User: test@example.com
+Algorithm: HS256
+Secret: "dev-only-change"
+
+MacClient Settings:
+- Backend URL: http://localhost:8000
+- Meeting ID: test-meet-001
+- JWT Token: (copy the long string above)

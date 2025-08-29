@@ -29,6 +29,7 @@ export interface TranscriptSegment {
   speakerLabel: string;
   timestamp: number;
   text: string;
+  source?: 'mic' | 'sys'; // Dual-source support
 }
 
 export interface AIPrompt {

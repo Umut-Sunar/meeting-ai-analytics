@@ -21,6 +21,7 @@ class TranscriptPartialMessage(BaseMessage):
     """Partial transcript message (interim results)."""
     type: Literal["transcript.partial"] = "transcript.partial"
     meeting_id: str
+    source: Literal["mic", "sys", "system"] = "mic"
     segment_no: int
     start_ms: int
     end_ms: Optional[int] = None
@@ -34,6 +35,7 @@ class TranscriptFinalMessage(BaseMessage):
     """Final transcript message (completed segment)."""
     type: Literal["transcript.final"] = "transcript.final"
     meeting_id: str
+    source: Literal["mic", "sys", "system"] = "mic"
     segment_no: int
     start_ms: int
     end_ms: int
@@ -86,7 +88,7 @@ OutgoingMessage = Union[
 class IngestHandshakeMessage(BaseMessage):
     """Handshake message from ingest client."""
     type: Literal["handshake"] = "handshake"
-    source: Literal["mic", "system"] = "mic"
+    source: Literal["mic", "sys", "system"] = "mic"
     sample_rate: int = Field(default=48000, ge=8000, le=48000)
     channels: int = Field(default=1, ge=1, le=2)
     language: str = Field(default="tr")
@@ -185,12 +187,14 @@ def create_transcript_message(
     is_final: bool = False,
     speaker: Optional[str] = None,
     confidence: Optional[float] = None,
+    source: str = "mic",
     **meta
 ) -> Union[TranscriptPartialMessage, TranscriptFinalMessage]:
     """Create a transcript message."""
     
     common_data = {
         "meeting_id": meeting_id,
+        "source": source,
         "segment_no": segment_no,
         "text": text,
         "start_ms": start_ms,

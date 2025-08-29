@@ -40,5 +40,34 @@
 	<string>$(DEEPGRAM_API_KEY)</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.0</string>
+				<key>NSThirdPartyExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	
+	<!-- TCC Permission Metadata -->
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSSupportsAutomaticGraphicsSwitching</key>
+	<true/>
+	
+	<!-- Force TCC Registration -->
+	<key>NSScreenCaptureDescription</key>
+	<string>MacClient needs screen recording permission to capture system audio for meeting transcription.</string>
 </dict>
 </plist>

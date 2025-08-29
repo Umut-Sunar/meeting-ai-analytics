@@ -18,19 +18,19 @@ enum PermissionsService {
         }
     }
 
+    /// Asenkron ve güvenilir izin kontrolü - SCShareableContent kullanır
     @available(macOS 13.0, *)
-    static func checkScreenRecordingPermission() async -> Bool {
-        do {
-            let content = try await SCShareableContent.current
-            return !content.displays.isEmpty
-        } catch {
-            print("Screen recording permission check failed: \(error)")
-            return false
+    static func hasScreenRecordingPermission() async -> Bool {
+        do { 
+            _ = try await SCShareableContent.current
+            return true
+        } catch { 
+            return false 
         }
     }
-    
-    @available(macOS 13.0, *)
+
+    /// İsteğe bağlı: sistem diyaloğunu tetiklemek için (bazı sürümlerde gösterir)
     static func requestScreenRecordingPermission() -> Bool {
-        return CGRequestScreenCaptureAccess()
+        CGRequestScreenCaptureAccess()
     }
 }

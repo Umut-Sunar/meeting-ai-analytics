@@ -71,7 +71,7 @@ def create_dev_jwt_token(user_id: str, tenant_id: str, email: str, role: str = "
     s = get_settings()
     payload = {
         "user_id": user_id, "tenant_id": tenant_id, "email": email, "role": role,
-        "exp": int(time.time()) + 3600, "iat": int(time.time()),
+        "exp": int(time.time()) + 86400, "iat": int(time.time()),  # 24 hours
         "aud": s.JWT_AUDIENCE, "iss": s.JWT_ISSUER
     }
     # Try RS256 if private key exists; else HS256

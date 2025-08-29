@@ -115,6 +115,27 @@ class RedisBus:
     def get_meeting_status_topic(self, meeting_id: str) -> str:
         """Get status topic for a meeting."""
         return f"meeting:{meeting_id}:status"
+        
+    async def subscribe_generator(self, channel: str):
+        """Subscribe to channel and yield messages as async generator."""
+        if not self.redis:
+            raise RuntimeError("Redis not connected")
+            
+        pubsub = self.redis.pubsub()
+        try:
+            await pubsub.subscribe(channel)
+            logger.info(f"Generator subscribed to channel: {channel}")
+            
+            async for message in pubsub.listen():
+                if message["type"] == "message":
+                    yield message["data"]
+                    
+        except asyncio.CancelledError:
+            logger.info(f"Generator subscription to {channel} cancelled")
+        except Exception as e:
+            logger.error(f"Error in generator subscription to {channel}: {e}")
+        finally:
+            await pubsub.close()
 
 
 # Global instance
