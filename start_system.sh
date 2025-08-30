@@ -6,12 +6,19 @@
 echo "🚀 Starting Analytics System..."
 echo "================================"
 
-# Step 1: Start Redis
+# Step 1: Start Redis (Docker or Host)
 echo "📊 Step 1: Starting Redis..."
-./start_redis.sh
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to start Redis"
-    exit 1
+: "${USE_DOCKER_REDIS:=1}"
+if [ "$USE_DOCKER_REDIS" = "1" ]; then
+    echo "📦 Using Docker Redis; skipping host Redis start."
+    echo "💡 To use host Redis instead: export USE_DOCKER_REDIS=0"
+else
+    echo "🧩 Using host Redis; starting local Redis with password..."
+    ./scripts/start_redis.sh
+    if [ $? -ne 0 ]; then
+        echo "❌ Failed to start host Redis"
+        exit 1
+    fi
 fi
 
 echo ""

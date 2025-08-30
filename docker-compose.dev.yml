@@ -35,7 +35,7 @@ services:
       test: ["CMD", "sh", "-c", 'redis-cli -a "$$REDIS_PASSWORD" PING | grep PONG']
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 12
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     networks:

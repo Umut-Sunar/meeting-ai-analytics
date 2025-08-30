@@ -19,7 +19,7 @@ The system uses the following Docker services:
 
 ## Redis (Docker, password)
 
-### Setup
+### Local Redis (Docker, password)
 
 1. **Set Redis password environment variable:**
 ```bash
@@ -63,6 +63,54 @@ sudo pkill -f redis-server
 # Then start Docker Redis
 docker compose -f docker-compose.dev.yml up -d redis
 ```
+
+See "Avoid double Redis" section below for more details.
+
+### Avoid Double Redis
+
+**Critical**: Only run ONE Redis instance at a time to prevent conflicts.
+
+#### Using Docker Redis (Recommended)
+```bash
+# Set environment variable to use Docker Redis
+export USE_DOCKER_REDIS=1
+
+# Start Docker Redis
+export REDIS_PASSWORD=dev_redis_password
+docker compose -f docker-compose.dev.yml up -d redis
+
+# Stop any host Redis if running
+brew services stop redis 2>/dev/null || true
+pkill -f redis-server 2>/dev/null || true
+```
+
+#### Using Host Redis (Alternative)
+```bash
+# Set environment variable to use host Redis
+export USE_DOCKER_REDIS=0
+export REDIS_PASSWORD=dev_redis_password
+
+# Stop Docker Redis if running
+docker compose -f docker-compose.dev.yml down redis
+
+# Start host Redis with password
+./scripts/start_redis.sh
+```
+
+#### Conflict Detection
+```bash
+# Check what Redis instances are running
+lsof -i :6379
+
+# Should show only ONE Redis process:
+# - Docker: com.docker.backend
+# - Host: redis-server
+```
+
+#### Troubleshooting
+- **Multiple Redis detected**: Stop all and restart with chosen method
+- **Connection refused**: Check if Redis is running on port 6379
+- **AUTH failed**: Verify password matches in .env and Redis config
 
 ## Full System Startup
 
