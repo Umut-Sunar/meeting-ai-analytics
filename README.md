@@ -31,6 +31,34 @@ cd backend
 uv install  # veya poetry install
 ```
 
+#### Health Check Endpoints
+Backend provides health check endpoints for monitoring and k8s/ecs probes:
+
+- **`GET /api/v1/health`** - Simple health check for k8s/ecs probes
+  ```json
+  {
+    "redis": "ok|down",
+    "storage": "ok|down|unavailable", 
+    "version": "0.1.0"
+  }
+  ```
+
+- **`GET /api/v1/health/detailed`** - Detailed health check with timestamp
+  ```json
+  {
+    "status": "healthy|unhealthy",
+    "timestamp": "2025-08-31T01:00:00.000Z",
+    "version": "0.1.0",
+    "services": {
+      "database": "healthy|unhealthy",
+      "redis": "healthy|unhealthy", 
+      "storage": "healthy|unhealthy|unavailable"
+    }
+  }
+  ```
+
+- **`GET /api/v1/ping`** - Simple ping endpoint
+
 ### Desktop - macOS
 ```bash
 cd desktop/macos

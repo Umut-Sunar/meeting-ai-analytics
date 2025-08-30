@@ -54,15 +54,20 @@ async def startup_event():
     else:
         print("⚠️ Storage service not available (skipped)")
     
-    # Initialize Redis connection with fail-fast if required
+    # Initialize Redis connection with explicit fail-fast behavior
     try:
         await redis_bus.connect()
-        print("✅ Redis bus initialized")
+        if redis_bus.redis:
+            print("✅ Redis bus initialized")
+        else:
+            print("⚠️ Redis bus initialized (no-op mode - streaming disabled)")
+    except SystemExit:
+        # Redis connection was required but failed - stop startup
+        print("🚨 Application startup failed due to required Redis connection")
+        raise
     except Exception as e:
-        # If Redis is required, the connect() method will raise and stop startup
-        # If not required, it logs warning and continues
-        print(f"❌ Redis initialization failed: {e}")
-        # Re-raise to stop startup if this was a required connection failure
+        # Unexpected error during Redis initialization
+        print(f"❌ Unexpected Redis initialization error: {e}")
         raise
     
     # WebSocket manager doesn't need explicit start

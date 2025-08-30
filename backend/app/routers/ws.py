@@ -5,7 +5,7 @@ Simplified WebSocket endpoints.
 import asyncio
 import json
 import logging
-from typing import Optional
+from typing import Optional, Dict, Tuple, Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from fastapi.encoders import jsonable_encoder
 from starlette.websockets import WebSocketState
@@ -119,10 +119,27 @@ async def websocket_subscriber(websocket: WebSocket, meeting_id: str, token: str
             pass
 
 
+# Global registry for ingest connections - keyed by (meeting_id, source)
+ingest_registry: Dict[Tuple[str, str], Dict[str, Any]] = {}
+
 @router.websocket("/ws/ingest/meetings/{meeting_id}")
 async def websocket_ingest(websocket: WebSocket, meeting_id: str, source: str = Query("mic", regex="^(mic|sys|system)$"), token: str = Query(None)):
-    """Simplified ingest endpoint with Authorization header and query token support."""
+    """WebSocket ingest endpoint with handshake protocol and duplicate replacement."""
     client: Optional[DeepgramLiveClient] = None
+    is_closing = False
+    connection_key = (meeting_id, source)
+    
+    async def safe_close(code: int, reason: str):
+        """Idempotent close to avoid double-close."""
+        nonlocal is_closing
+        if is_closing:
+            return
+        is_closing = True
+        try:
+            if websocket.client_state != WebSocketState.DISCONNECTED:
+                await websocket.close(code=code, reason=reason)
+        except Exception as e:
+            logger.warning(f"[WS][INGEST] Close error: {e}")
     
     try:
         # 1) Extract token from Authorization header (preferred) or query parameter (fallback)
@@ -139,7 +156,7 @@ async def websocket_ingest(websocket: WebSocket, meeting_id: str, source: str = 
             logger.info(f"[WS][INGEST] Using query parameter token for meeting {meeting_id} (source: {source})")
         
         if not jwt_token:
-            await websocket.close(code=1008, reason="auth failed: No token provided in Authorization header or query parameter")
+            await safe_close(1008, "auth failed: No token provided in Authorization header or query parameter")
             return
             
         # Sanitize token (remove newlines/whitespace that might cause issues)
@@ -151,47 +168,89 @@ async def websocket_ingest(websocket: WebSocket, meeting_id: str, source: str = 
             logger.info(f"[WS][INGEST] Auth success: {claims.email} (meeting: {meeting_id}, source: {source})")
         except SecurityError as e:
             logger.warning(f"[WS][INGEST] Auth failed for meeting {meeting_id}: {e}")
-            await websocket.close(code=1008, reason=f"auth failed: {e}")  # policy violation
+            await safe_close(1008, f"auth failed: {e}")
             return
 
-        # 2) Artık kabul edebiliriz
+        # 3) Accept connection
         await websocket.accept()
         logger.info(f"[WS][INGEST] WebSocket accepted for meeting {meeting_id} (source: {source})")
 
-        # 3) Connection manager check (artık accept sonrası) - dual-source support
-        connection_key = (meeting_id, source)
-        if connection_key in ws_manager.ingest_connections:
-            logger.warning(f"[WS][INGEST] Duplicate ingest connection for meeting {meeting_id} source {source}")
-            await send_error_and_close(websocket, 1013, f"Ingest already active for this meeting (source: {source})")
+        # 4) First frame must be handshake with timeout
+        try:
+            msg = await asyncio.wait_for(websocket.receive_json(), timeout=6.0)
+        except asyncio.TimeoutError:
+            logger.warning(f"[WS][INGEST] Handshake timeout for meeting {meeting_id} (source: {source})")
+            await safe_close(1002, "handshake-timeout")
             return
-            
-        # Register connection with (meeting_id, source) tuple
+        except Exception as e:
+            logger.warning(f"[WS][INGEST] Handshake receive error for meeting {meeting_id}: {e}")
+            await safe_close(1002, "handshake-error")
+            return
+
+        # Validate first frame is handshake
+        if msg.get("type") != "handshake":
+            logger.warning(f"[WS][INGEST] Invalid first frame: expected 'handshake', got: {msg.get('type')} for meeting {meeting_id}")
+            await safe_close(1002, "expected-handshake")
+            return
+
+        # Validate handshake fields
+        device_id = msg.get("device_id")
+        handshake_source = msg.get("source")
+        sample_rate = msg.get("sample_rate")
+        channels = msg.get("channels")
+
+        if not isinstance(device_id, str) or not device_id:
+            logger.warning(f"[WS][INGEST] Invalid device_id in handshake: {device_id}")
+            await safe_close(1002, "invalid-device-id")
+            return
+
+        if handshake_source not in {"mic", "sys"}:
+            logger.warning(f"[WS][INGEST] Invalid source in handshake: {handshake_source}")
+            await safe_close(1002, "invalid-source")
+            return
+
+        if not isinstance(sample_rate, int) or sample_rate != settings.INGEST_SAMPLE_RATE:
+            logger.warning(f"[WS][INGEST] Invalid sample_rate: {sample_rate}, expected {settings.INGEST_SAMPLE_RATE}")
+            await safe_close(1002, f"invalid-sample-rate")
+            return
+
+        if not isinstance(channels, int) or channels != settings.INGEST_CHANNELS:
+            logger.warning(f"[WS][INGEST] Invalid channels: {channels}, expected {settings.INGEST_CHANNELS}")
+            await safe_close(1002, f"invalid-channels")
+            return
+
+        logger.info(f"[WS][INGEST] Valid handshake: device_id={device_id}, source={handshake_source}, rate={sample_rate}, channels={channels}")
+
+        # 5) Registry check - replace duplicates
+        if connection_key in ingest_registry:
+            old_entry = ingest_registry[connection_key]
+            old_ws = old_entry.get("websocket")
+            if old_ws and not old_entry.get("is_closing", False):
+                logger.info(f"[WS][INGEST] Replacing existing connection for {meeting_id} (source: {source})")
+                old_entry["is_closing"] = True
+                try:
+                    if old_ws.client_state != WebSocketState.DISCONNECTED:
+                        await old_ws.close(code=1012, reason="replaced")
+                except Exception as e:
+                    logger.warning(f"[WS][INGEST] Error closing old connection: {e}")
+
+        # Register new connection
+        ingest_registry[connection_key] = {
+            "websocket": websocket,
+            "device_id": device_id,
+            "source": handshake_source,
+            "sample_rate": sample_rate,
+            "channels": channels,
+            "is_closing": False
+        }
+
+        # Also register in connection manager for compatibility
         ws_manager.ingest_connections[connection_key] = websocket
         ws_manager.connection_meetings[websocket] = connection_key
-        logger.info(f"🎤 [WS][INGEST] Connected to meeting {meeting_id} (source: {source})")
-        await ws_manager._send_status(websocket, meeting_id, "connected", "Ingest connected")
 
-        # 4) Handshake oku & doğrula
-        print(f"🔄 STEP 4: Reading handshake for {meeting_id}-{source}")  # DEBUG
-        try:
-            hs_data = await asyncio.wait_for(websocket.receive_text(), timeout=10.0)
-            print(f"📨 HANDSHAKE DATA: {hs_data[:100]}...")  # DEBUG
-            hs = IngestHandshakeMessage.model_validate_json(hs_data)
-            logger.info(f"[WS][INGEST] Handshake received: source={hs.source}, rate={hs.sample_rate}, lang={hs.language}")
-            print(f"✅ HANDSHAKE VALID: {hs.source}")  # DEBUG
-        except Exception as e:
-            logger.error(f"[WS][INGEST] Handshake failed for meeting {meeting_id}: {e}")
-            print(f"❌ HANDSHAKE FAILED: {e}")  # DEBUG
-            await send_error_and_close(websocket, 1002, f"Handshake invalid: {e}")
-            return
-
-        # Validate handshake
-        if hs.sample_rate != settings.INGEST_SAMPLE_RATE:
-            await send_error_and_close(websocket, 1002, f"Invalid sample rate {hs.sample_rate}, expected {settings.INGEST_SAMPLE_RATE}")
-            return
-        if hs.channels != settings.INGEST_CHANNELS:
-            await send_error_and_close(websocket, 1002, f"Invalid channels {hs.channels}, expected {settings.INGEST_CHANNELS}")
-            return
+        # 6) Send handshake acknowledgment
+        await websocket.send_json({"type": "handshake-ack", "ok": True})
+        logger.info(f"🎤 [WS][INGEST] Handshake complete for meeting {meeting_id} (source: {handshake_source})")
 
         # Initialize segment counter
         if meeting_id not in meeting_segments:
@@ -352,13 +411,23 @@ async def websocket_ingest(websocket: WebSocket, meeting_id: str, source: str = 
         logger.error(f"Ingest error for {meeting_id} (source: {source}): {e}")
         
     finally:
+        # Cleanup registry entry
+        if connection_key in ingest_registry:
+            ingest_registry[connection_key]["is_closing"] = True
+            ingest_registry.pop(connection_key, None)
+            
+        # Cleanup Deepgram client
         if client:
             try:
                 await client.disconnect()
             except Exception:
                 pass
+                
+        # Cleanup connection manager
         await ws_manager.disconnect(websocket)
         meeting_segments.pop(meeting_id, None)
+        
+        logger.info(f"[WS][INGEST] Cleanup complete for meeting {meeting_id} (source: {source})")
 
 
 @router.websocket("/transcript/{meeting_id}")

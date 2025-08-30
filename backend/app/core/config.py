@@ -8,8 +8,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = Field(...)
 
     # Redis
-    REDIS_URL: str = Field(...)
-    REDIS_PASSWORD: str = Field(default="")
+    REDIS_URL: str | None = Field(default=None)
+    REDIS_PASSWORD: str | None = Field(default=None)
     REDIS_REQUIRED: bool = Field(default=True)
 
     # Storage

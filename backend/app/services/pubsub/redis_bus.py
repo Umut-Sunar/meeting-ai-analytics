@@ -64,9 +64,19 @@ class RedisBus:
 
     async def connect(self):
         """Connect to Redis with AUTH support and fail-fast if required."""
+        # Check if Redis is configured
+        if not settings.REDIS_URL:
+            if settings.REDIS_REQUIRED:
+                logger.error("🚨 REDIS_URL not configured but REDIS_REQUIRED=true")
+                raise RuntimeError("Redis connection required but REDIS_URL not configured")
+            else:
+                logger.warning("⚠️ REDIS_URL not configured - transcript streaming will be disabled")
+                self.redis = None
+                return
+        
         try:
             redis_url, masked_url = self._build_redis_url()
-            logger.info(f"Attempting to connect to Redis: {masked_url}")
+            logger.info(f"🔌 Connecting to Redis: {masked_url}")
             
             self.redis = redis.from_url(
                 redis_url,
@@ -92,25 +102,30 @@ class RedisBus:
             auth_status = "on" if (parsed.password or settings.REDIS_PASSWORD) else "off"
             
             logger.info(f"✅ Redis connected: host={host}, port={port}, db={db}, auth={auth_status}, version={redis_version}")
-            logger.info("📋 Ensure only one Redis runs. If Docker is used, do not start host redis.")
+            logger.info("📋 Ensure only one Redis instance runs. If using Docker, do not start host Redis.")
             
         except Exception as e:
             error_msg = f"❌ Failed to connect to Redis: {e}"
             logger.error(error_msg)
             
-            # Parse URL for error logging
-            parsed = urlparse(settings.REDIS_URL)
-            host = parsed.hostname or 'localhost'
-            port = parsed.port or 6379
-            logger.error(f"Redis connection details: host={host}, port={port}")
+            # Parse URL for error logging if available
+            if settings.REDIS_URL:
+                parsed = urlparse(settings.REDIS_URL)
+                host = parsed.hostname or 'localhost'
+                port = parsed.port or 6379
+                logger.error(f"📍 Connection target: host={host}, port={port}")
             
             if settings.REDIS_REQUIRED:
-                logger.error("🚨 REDIS_REQUIRED=true - stopping startup")
-                logger.error("💡 Hint: Check if Redis is running and password is correct")
-                logger.error("💡 For Docker: export REDIS_PASSWORD=dev_redis_password && docker compose up -d redis")
-                raise RuntimeError(f"Redis connection required but failed: {e}")
+                logger.error("🚨 REDIS_REQUIRED=true - stopping application startup")
+                logger.error("💡 Troubleshooting hints:")
+                logger.error("   • Check if Redis is running: lsof -i :6379")
+                logger.error("   • For Docker Redis: export REDIS_PASSWORD=dev_redis_password && docker compose -f docker-compose.dev.yml up -d redis")
+                logger.error("   • For host Redis: redis-server --daemonize yes")
+                logger.error("   • Test connection: redis-cli -a <password> ping")
+                raise SystemExit(f"Redis connection required but failed: {e}")
             else:
                 logger.warning("⚠️ Redis not available - transcript streaming will be disabled")
+                logger.warning("💡 Set REDIS_REQUIRED=false in .env to suppress this warning")
                 self.redis = None
             
     async def disconnect(self):
