@@ -1,0 +1,63 @@
+{
+  "pipeline_run": {
+    "timestamp": "2025-08-31T01:15:00.334832",
+    "test_params": {
+      "test_meeting_id": "test-meeting-2dab32eb",
+      "test_user_id": "test-user-001",
+      "test_tenant_id": "test-tenant-001",
+      "test_email": "test@example.com",
+      "backend_url": "http://localhost:8000",
+      "websocket_url": "ws://localhost:8000",
+      "deepgram_test_params": {
+        "language": "tr",
+        "model": "nova-2",
+        "sample_rate": 16000,
+        "channels": 1
+      },
+      "test_sources": [
+        "mic",
+        "sys"
+      ],
+      "generated_at": "2025-08-31T01:14:56.262796",
+      "jwt_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTAwMSIsInRlbmFudF9pZCI6InRlc3QtdGVuYW50LTAwMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzU2Njc4NDk2LCJpYXQiOjE3NTY1OTIwOTYsImF1ZCI6Im1lZXRpbmdzIiwiaXNzIjoib3VyLWFwcCJ9.oUfHIwtQnJ8hYIYNClpEje0_yUrA3S4Kxr-S4a1VjMCG88f3lYMWqXyef_AzkoSng6Pam8r2UeXXt6_3KJm8jw85MOqwU2L1TsJwDdOUUD49ZzN1LXDq3XtPva5psx6kbnGZu3ptFu4QtNmZt-03u3vklVmCpGY9gfCxjl3oL9d1g4xD4tJx7ed13GDJiJIUfwaPvldpY0zsaUSMKSSPvytEkuyzCiFit-Q2KMSXBn1LllAsw8V2ZfSqfdNHp3eWIiMvDtJFOjsO2D750HpzS7F1-g1EEj82Pm_u1i8S_JFCBBzyfoDKvbkze8dpKXC36xUcNBNgjeP7KHtnZSN5Bw"
+    },
+    "test_results": {
+      "jwt_generation": {
+        "status": "success",
+        "token_length": 600,
+        "expires_at": 1756678496,
+        "user_id": "test-user-001",
+        "email": "test@example.com"
+      },
+      "backend_api": {
+        "status": "success",
+        "health_check": {
+          "status": "healthy",
+          "timestamp": "2025-08-31T01:14:56.523368",
+          "version": "0.1.0",
+          "services": {
+            "database": "healthy",
+            "redis": "unhealthy",
+            "storage": "healthy"
+          }
+        },
+        "jwt_auth": "valid"
+      },
+      "deepgram": {
+        "status": "success",
+        "bytes_sent": 5760,
+        "frames_sent": 3,
+        "transcripts_received": 0,
+        "errors_received": 0,
+        "connection_time": "2025-08-30 22:14:57.027507"
+      }
+    },
+    "summary": {
+      "total_tests": 3,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "success_rate": "100.0%"
+    }
+  }
+}

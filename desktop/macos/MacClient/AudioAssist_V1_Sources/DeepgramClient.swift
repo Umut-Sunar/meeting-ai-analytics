@@ -16,7 +16,7 @@ struct DGConfig: Equatable {
     let diarize: Bool
     
     init(apiKey: String, 
-         sampleRate: Int = 48000,  // Match successful project: 48kHz
+         sampleRate: Int = 16000,  // 🚨 FIXED: Standardized to 16kHz for consistency
          channels: Int = 1, 
          multichannel: Bool = false, 
          model: String = "nova-2", 

@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field, validator
 class BaseMessage(BaseModel):
     """Base class for all WebSocket messages."""
     type: str
-    ts: datetime = Field(default_factory=datetime.utcnow)
+    ts: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
 # Outgoing messages to web subscribers
@@ -28,7 +28,7 @@ class TranscriptPartialMessage(BaseMessage):
     speaker: Optional[str] = None
     text: str
     confidence: Optional[float] = None
-    meta: Dict[str, Any] = Field(default_factory=dict)
+    meta: Dict[str, str] = Field(default_factory=dict)
 
 
 class TranscriptFinalMessage(BaseMessage):
@@ -42,7 +42,7 @@ class TranscriptFinalMessage(BaseMessage):
     speaker: Optional[str] = None
     text: str
     confidence: float
-    meta: Dict[str, Any] = Field(default_factory=dict)
+    meta: Dict[str, str] = Field(default_factory=dict)
 
 
 class AITipMessage(BaseMessage):
@@ -52,7 +52,7 @@ class AITipMessage(BaseMessage):
     tip_type: str  # "question", "summary", "action_item", etc.
     content: str
     relevance_score: float = Field(ge=0.0, le=1.0)
-    meta: Dict[str, Any] = Field(default_factory=dict)
+    meta: Dict[str, str] = Field(default_factory=dict)
 
 
 class StatusMessage(BaseMessage):
@@ -61,7 +61,7 @@ class StatusMessage(BaseMessage):
     meeting_id: str
     status: str  # "connected", "recording", "processing", "error", etc.
     message: Optional[str] = None
-    details: Dict[str, Any] = Field(default_factory=dict)
+    details: Dict[str, str] = Field(default_factory=dict)
 
 
 class ErrorMessage(BaseMessage):
@@ -70,7 +70,7 @@ class ErrorMessage(BaseMessage):
     meeting_id: str
     error_code: str
     error_message: str
-    details: Dict[str, Any] = Field(default_factory=dict)
+    details: Dict[str, str] = Field(default_factory=dict)
 
 
 # Union type for all outgoing messages
@@ -89,7 +89,7 @@ class IngestHandshakeMessage(BaseMessage):
     """Handshake message from ingest client."""
     type: Literal["handshake"] = "handshake"
     source: Literal["mic", "sys", "system"] = "mic"
-    sample_rate: int = Field(default=48000, ge=8000, le=48000)
+    sample_rate: int = Field(default=16000, ge=8000, le=48000)  # 🚨 FIXED: Default to 16kHz
     channels: int = Field(default=1, ge=1, le=2)
     language: str = Field(default="tr")
     ai_mode: Literal["standard", "super"] = "standard"
@@ -128,7 +128,7 @@ class ConnectionInfo(BaseModel):
     connected_at: datetime
     last_ping: Optional[datetime] = None
     last_pong: Optional[datetime] = None
-    meta: Dict[str, Any] = Field(default_factory=dict)
+    meta: Dict[str, str] = Field(default_factory=dict)
 
 
 class IngestSessionInfo(BaseModel):

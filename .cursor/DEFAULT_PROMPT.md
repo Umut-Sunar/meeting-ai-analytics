@@ -95,3 +95,5 @@ Single Responsibility Principle (SRP) gözetilecek
 Dependency Injection tercih edilecek
 
 Clear Interfaces ve soyutlama olacak
+
+otomatik olarak kod değişikliğini yapabilirsin

@@ -43,6 +43,12 @@ class AudioEngine {
     var onMicPCM: ((Data) -> Void)?
     var onSystemPCM: ((Data) -> Void)?
     
+    // TASK 3: Device change callback
+    var onDeviceChange: (() -> Void)?
+    
+    // TASK 8: Observability hooks
+    var onMetric: ((String, Double, [String: String]) -> Void)?
+    
     // MARK: - Initialization
     
     init(config: DGConfig, transportMode: AudioTransportMode = .backendWS) {
@@ -77,6 +83,8 @@ class AudioEngine {
         
         // Clean up references
         onEvent = nil
+        onDeviceChange = nil
+        onMetric = nil
         microphoneClient = nil
         systemAudioClient = nil
         currentConfig = nil
@@ -215,6 +223,16 @@ class AudioEngine {
             }
         }
         
+        // TASK 3: Setup device change callback for microphone
+        micCapture.onDeviceChange = { [weak self] in
+            self?.onDeviceChange?()
+        }
+        
+        // TASK 8: Setup metric hook for microphone
+        micCapture.onMetric = { [weak self] name, value, tags in
+            self?.onMetric?(name, value, tags)
+        }
+        
         // Start microphone capture
         micCapture.start { [weak self] pcmData in
             guard let self = self else { return }
@@ -251,6 +269,16 @@ class AudioEngine {
         Task {
             if #available(macOS 13.0, *) {
                 do {
+                    // TASK 3: Setup device change callback for system audio
+                    systemAudioCapture.onDeviceChange = { [weak self] in
+                        self?.onDeviceChange?()
+                    }
+                    
+                    // TASK 8: Setup metric hook for system audio
+                    systemAudioCapture.onMetric = { [weak self] name, value, tags in
+                        self?.onMetric?(name, value, tags)
+                    }
+                    
                     // Set up callback before starting
                     systemAudioCapture.onPCM16k = { [weak self] pcmData in
                         guard let self = self else { return }

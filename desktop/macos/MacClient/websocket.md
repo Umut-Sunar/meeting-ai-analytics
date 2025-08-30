@@ -1,27 +1,42 @@
-# 🔌 MacClient WebSocket Akış Analizi ve Sorun Tespiti
+# 🔌 MacClient WebSocket Akış Analizi ve Resilient Implementation
 
-## 📊 **Mevcut Durum Analizi**
+## 📊 **Güncel Durum (2025-08-30)**
+
+### ✅ **Tamamlanan İyileştirmeler:**
+- **State Machine**: Explicit state management (idle, connecting, connected, closing, disconnected)
+- **Guarded Send**: PCM data sadece connected state'te gönderiliyor
+- **Exponential Backoff**: 1s, 2s, 5s, 10s, 30s retry delays
+- **PCM Ring Buffer**: 500ms buffer per source (mic/system) for reconnect bridging
+- **Keep-alive Mechanism**: 30s interval ping/pong
+- **Enhanced Error Handling**: Specific error codes and retry logic
+- **Proper Lifecycle**: Clean connection/disconnection with finalize messages
 
 ### ✅ **Çalışan Kısımlar:**
 - Backend WebSocket endpoint aktif (`ws://localhost:8000/api/v1/ws/ingest/meetings/{meeting_id}`)
 - JWT authentication başarılı
-- WebSocket bağlantısı kuruldu
-- Handshake mesajı gönderildi ve kabul edildi
-- System Audio ve Microphone capture başlatıldı
-
-### ❌ **Sorunlu Kısımlar:**
-- **PCM Data Bridge eksik**: AudioEngine'den gelen PCM verisi BackendIngestWS'e iletilmiyor
-- **"WebSocket receive error: There was a bad response from the server"** hatası
-- **"Failed to send PCM data"** hatası
+- Resilient WebSocket connection with auto-reconnect
+- PCM Data Bridge: AudioEngine → BackendIngestWS → Backend
+- State-based connection management
+- Buffered PCM transmission during reconnects
 
 ---
 
-## 🏗️ **Sistem Mimarisi**
+## 🏗️ **Resilient WebSocket Mimarisi**
 
-### **1. MacClient Audio Akışı:**
+### **1. State Machine Flow:**
 ```
-[Microphone] → [MicCapture] → [AudioEngine] → [❌ KOPUK BAĞLANTI] → [BackendIngestWS]
-[System Audio] → [SystemAudioCaptureSC] → [AudioEngine] → [❌ KOPUK BAĞLANTI] → [BackendIngestWS]
+[idle] → [connecting] → [connected] → [closing] → [disconnected]
+                ↑                           ↓
+                └─── [exponential backoff] ──┘
+```
+
+### **2. MacClient Audio Akışı (Resilient):**
+```
+[Microphone] → [MicCapture] → [AudioEngine] → [BackendIngestWS] → [Backend]
+                                                    ↓
+[System Audio] → [SystemAudioCaptureSC] → [AudioEngine] → [PCM Ring Buffer] → [Backend]
+                                                              ↓
+                                                    [Auto-reconnect with buffering]
 ```
 
 ### **2. Backend WebSocket Akışı:**
@@ -31,41 +46,86 @@
 
 ---
 
-## 🔍 **Detaylı Kod Analizi**
+## 🔍 **Resilient Implementation Details**
 
-### **A. MacClient Tarafı**
+### **A. BackendIngestWS.swift - Enhanced WebSocket Client**
 
-#### **1. BackendIngestWS.swift - WebSocket Client**
+#### **1. State Machine Implementation:**
 ```swift
-// URL Format
-ws://localhost:8000/api/v1/ws/ingest/meetings/{meeting_id}?token={jwt}
-
-// Handshake Message (TEXT frame)
-{
-  "type": "handshake",
-  "source": "mic|system",
-  "sample_rate": 48000,
-  "channels": 1,
-  "language": "tr|en|auto",
-  "ai_mode": "standard|super",
-  "device_id": "device-uuid"
+enum State {
+    case idle, connecting, connected, closing, disconnected
 }
 
-// PCM Data (BINARY frame)
-func sendPCM(_ pcmData: Data) {
-    let message = URLSessionWebSocketTask.Message.data(chunk)
-    task?.send(message) { error in ... }
+private var state: State = .idle {
+    didSet {
+        switch state {
+        case .connected:
+            resetRetryCount()
+            startKeepAlive()
+            flushBufferedPCM()
+        case .disconnected, .closing:
+            stopKeepAlive()
+        default: break
+        }
+    }
 }
 ```
 
-#### **2. CaptureController.swift - Ana Koordinatör**
+#### **2. Guarded Send with Buffering:**
 ```swift
-// ❌ KRİTİK SORUN: PCM Bridge eksik!
-private func setupPCMDataBridge(appState: AppState) {
-    // TODO: Replace this with actual PCM callback from AudioAssist_V1
-    // The exact implementation depends on how AudioEngine exposes PCM data
+func sendPCM(_ pcm: Data, source: String) {
+    guard canSend else {
+        // Buffer PCM data if we're not connected but might reconnect
+        if state == .connecting || state == .disconnected {
+            pcmBuffer.add(pcm, source: source)
+        }
+        return
+    }
+    sendPCMInternal(pcm, source: source)
+}
+```
+
+#### **3. PCM Ring Buffer (500ms per source):**
+```swift
+private struct PCMRingBuffer {
+    private var micBuffer: [Data] = []
+    private var systemBuffer: [Data] = []
+    private let maxBufferDuration: TimeInterval = 0.5
     
-    appState.log("⚠️ PCM bridge setup - needs AudioAssist_V1 integration")
+    mutating func add(_ data: Data, source: String) {
+        // Keep only recent 500ms of data
+    }
+}
+```
+
+#### **4. Exponential Backoff Reconnection:**
+```swift
+private let backoffDelays: [TimeInterval] = [1.0, 2.0, 5.0, 10.0, 30.0]
+
+private func scheduleReconnect() {
+    let delay = backoffDelays[min(retryCount, backoffDelays.count - 1)]
+    // Schedule reconnection with exponential backoff
+}
+```
+
+#### **5. CaptureController.swift - Updated PCM Bridge:**
+```swift
+// ✅ FIXED: PCM Bridge with source parameter
+audioEngine?.onMicPCM = { [weak self] data in
+    guard let self = self else { return }
+    
+    // Echo suppression logic
+    if shouldSuppressMic {
+        let suppressedData = self.applySuppression(data: data, factor: 0.3)
+        self.wsMic.sendPCM(suppressedData, source: "mic")  // ✅ With source
+    } else {
+        self.wsMic.sendPCM(data, source: "mic")  // ✅ With source
+    }
+}
+
+audioEngine?.onSystemPCM = { [weak self] data in
+    guard let self = self else { return }
+    self.wsSys.sendPCM(data, source: "system")  // ✅ With source
 }
 ```
 

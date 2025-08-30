@@ -36,20 +36,27 @@ def decode_jwt_token(token: str) -> UserClaims:
     """Decode and validate JWT token with fallback support."""
     s = get_settings()
     try:
-        try:
+        # First, check which algorithm the token uses
+        header = jwt.get_unverified_header(token)
+        token_alg = header.get("alg")
+        
+        if token_alg == "RS256":
+            # Use RS256 with public key
             pub = load_jwt_public_key()
-            if pub:
-                payload = jwt.decode(
-                    token, pub, algorithms=["RS256"],
-                    audience=s.JWT_AUDIENCE, issuer=s.JWT_ISSUER
-                )
-            else:
-                raise InvalidTokenError("No public key")
-        except Exception:
+            if not pub:
+                raise InvalidTokenError("No public key available for RS256 token")
+            payload = jwt.decode(
+                token, pub, algorithms=["RS256"],
+                audience=s.JWT_AUDIENCE, issuer=s.JWT_ISSUER
+            )
+        elif token_alg == "HS256":
+            # Use HS256 with secret key
             payload = jwt.decode(
                 token, s.SECRET_KEY, algorithms=["HS256"],
                 audience=s.JWT_AUDIENCE, issuer=s.JWT_ISSUER
             )
+        else:
+            raise InvalidTokenError(f"Unsupported algorithm: {token_alg}")
 
         required = ["user_id", "tenant_id", "email", "role", "exp", "iat", "aud", "iss"]
         for k in required:

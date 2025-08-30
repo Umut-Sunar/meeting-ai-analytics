@@ -1,0 +1,16 @@
+{
+  "type": "transcript.final",
+  "ts": "2025-08-29T20:04:55.066209",
+  "meeting_id": "test-meeting-001",
+  "source": "mic",
+  "segment_no": 1,
+  "start_ms": 1000,
+  "end_ms": 2000,
+  "speaker": "Speaker 1",
+  "text": "Hello world test transcript",
+  "confidence": 0.95,
+  "meta": {
+    "language": "en",
+    "model": "nova-2"
+  }
+}

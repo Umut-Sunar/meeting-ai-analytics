@@ -44,23 +44,30 @@ app.include_router(ws.router, prefix="/api/v1", tags=["websockets"])
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup."""
-    try:
-        # Initialize MinIO buckets (if available)
-        if STORAGE_AVAILABLE:
+    # Initialize MinIO buckets (if available)
+    if STORAGE_AVAILABLE:
+        try:
             await storage_service.initialize_buckets()
             print("✅ Storage service initialized")
-        else:
-            print("⚠️  Storage service not available (skipped)")
-        
-        # Initialize Redis connection
+        except Exception as e:
+            print(f"⚠️ Storage service failed: {e}")
+    else:
+        print("⚠️ Storage service not available (skipped)")
+    
+    # Initialize Redis connection with fail-fast if required
+    try:
         await redis_bus.connect()
         print("✅ Redis bus initialized")
-        
-        # WebSocket manager doesn't need explicit start
-        print("✅ WebSocket manager ready")
-        
     except Exception as e:
-        print(f"❌ Failed to initialize services: {e}")
+        # If Redis is required, the connect() method will raise and stop startup
+        # If not required, it logs warning and continues
+        print(f"❌ Redis initialization failed: {e}")
+        # Re-raise to stop startup if this was a required connection failure
+        raise
+    
+    # WebSocket manager doesn't need explicit start
+    print("✅ WebSocket manager ready")
+    print("✅ Backend startup completed")
 
 
 @app.on_event("shutdown")

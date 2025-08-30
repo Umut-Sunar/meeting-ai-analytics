@@ -8,36 +8,38 @@ class Settings(BaseSettings):
     DATABASE_URL: str = Field(...)
 
     # Redis
-    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_URL: str = Field(...)
+    REDIS_PASSWORD: str = Field(default="")
+    REDIS_REQUIRED: bool = Field(default=True)
 
-    # Storage (optional placeholders)
-    MINIO_ENDPOINT: str = "http://localhost:9000"
-    MINIO_ACCESS_KEY: str = "minioadmin"
-    MINIO_SECRET_KEY: str = "minioadmin"
-    MINIO_SECURE: bool = False
+    # Storage
+    MINIO_ENDPOINT: str = Field(...)
+    MINIO_ACCESS_KEY: str = Field(...)
+    MINIO_SECRET_KEY: str = Field(...)
+    MINIO_SECURE: bool = Field(default=False)
 
     # File
-    MAX_UPLOAD_SIZE: int = 100 * 1024 * 1024
-    MULTIPART_CHUNK_SIZE: int = 5 * 1024 * 1024
-    PRESIGNED_URL_EXPIRE_SECONDS: int = 3600
+    MAX_UPLOAD_SIZE: int = Field(default=100 * 1024 * 1024)
+    MULTIPART_CHUNK_SIZE: int = Field(default=5 * 1024 * 1024)
+    PRESIGNED_URL_EXPIRE_SECONDS: int = Field(default=3600)
 
     # Security
-    SECRET_KEY: str = "dev-only-change"
-    JWT_AUDIENCE: str = "meetings"
-    JWT_ISSUER: str = "our-app"
-    JWT_PUBLIC_KEY_PATH: str = "./keys/jwt.pub"
+    SECRET_KEY: str = Field(...)
+    JWT_AUDIENCE: str = Field(...)
+    JWT_ISSUER: str = Field(...)
+    JWT_PUBLIC_KEY_PATH: str = Field(...)
 
     # Realtime/WS
-    MAX_WS_CLIENTS_PER_MEETING: int = 20
-    MAX_INGEST_MSG_BYTES: int = 32768
-    INGEST_SAMPLE_RATE: int = 48000
-    INGEST_CHANNELS: int = 1
+    MAX_WS_CLIENTS_PER_MEETING: int = Field(default=20)
+    MAX_INGEST_MSG_BYTES: int = Field(default=32768)
+    INGEST_SAMPLE_RATE: int = Field(default=16000)
+    INGEST_CHANNELS: int = Field(default=1)
 
     # Deepgram
-    DEEPGRAM_API_KEY: str = ""
-    DEEPGRAM_MODEL: str = "nova-2"
-    DEEPGRAM_LANGUAGE: str = "tr"
-    DEEPGRAM_ENDPOINT: str = "wss://api.deepgram.com/v1/listen"
+    DEEPGRAM_API_KEY: str = Field(...)
+    DEEPGRAM_MODEL: str = Field(default="nova-2")
+    DEEPGRAM_LANGUAGE: str = Field(default="tr")
+    DEEPGRAM_ENDPOINT: str = Field(default="wss://api.deepgram.com/v1/listen")
 
     class Config:
         env_file = ".env"

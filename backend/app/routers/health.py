@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Dict, Any
 from fastapi import APIRouter, status
 from pydantic import BaseModel
+from app.services.pubsub.redis_bus import redis_bus
 
 router = APIRouter()
 
@@ -32,10 +33,18 @@ async def health_check() -> HealthResponse:
     Returns:
         HealthResponse: Current health status with timestamp and service states
     """
-    # TODO: Add actual database and Redis health checks
+    # Check Redis connection
+    redis_status = "unhealthy"
+    if redis_bus.redis:
+        try:
+            await redis_bus.redis.ping()
+            redis_status = "healthy"
+        except Exception:
+            redis_status = "unhealthy"
+    
     services = {
         "database": "healthy",  # Will be implemented with actual DB check
-        "redis": "healthy",     # Will be implemented with actual Redis check
+        "redis": redis_status,
         "storage": "healthy",   # Will be implemented with actual MinIO check
     }
     

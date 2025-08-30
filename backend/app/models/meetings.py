@@ -175,6 +175,9 @@ class Transcript(Base):
     # Raw metadata from speech recognition
     raw_json = Column(JSON, nullable=True)  # macOS Results/Metadata JSON
     
+    # Idempotent key for duplicate prevention
+    idempotent_key = Column(String(255), nullable=True, unique=True, index=True)
+    
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     

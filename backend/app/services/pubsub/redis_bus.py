@@ -3,6 +3,7 @@ import json
 import logging
 import contextlib
 from typing import Any, Dict, Optional, Callable, Awaitable
+from urllib.parse import urlparse, urlunparse
 from redis import asyncio as redis
 from app.core.config import get_settings
 
@@ -19,19 +20,98 @@ class RedisBus:
         self.subscribers: Dict[str, Callable[[str, Dict[str, Any]], Awaitable[None]]] = {}
         self._listen_task: Optional[asyncio.Task] = None
         
+    def _build_redis_url(self) -> tuple[str, str]:
+        """Build Redis URL with password and return (url, masked_url) for logging."""
+        redis_url = settings.REDIS_URL
+        
+        # Parse URL to check for existing password
+        parsed = urlparse(redis_url)
+        
+        # If REDIS_PASSWORD is set but URL has no password, add it
+        if settings.REDIS_PASSWORD and not parsed.password:
+            # Reconstruct URL with password
+            netloc = f":{settings.REDIS_PASSWORD}@{parsed.hostname}"
+            if parsed.port:
+                netloc += f":{parsed.port}"
+            
+            redis_url = urlunparse((
+                parsed.scheme,
+                netloc,
+                parsed.path,
+                parsed.params,
+                parsed.query,
+                parsed.fragment
+            ))
+        
+        # Create masked URL for logging
+        if parsed.password or settings.REDIS_PASSWORD:
+            masked_netloc = f":***@{parsed.hostname}"
+            if parsed.port:
+                masked_netloc += f":{parsed.port}"
+            
+            masked_url = urlunparse((
+                parsed.scheme,
+                masked_netloc,
+                parsed.path,
+                parsed.params,
+                parsed.query,
+                parsed.fragment
+            ))
+        else:
+            masked_url = redis_url
+            
+        return redis_url, masked_url
+
     async def connect(self):
-        """Connect to Redis."""
+        """Connect to Redis with AUTH support and fail-fast if required."""
         try:
+            redis_url, masked_url = self._build_redis_url()
+            logger.info(f"Attempting to connect to Redis: {masked_url}")
+            
             self.redis = redis.from_url(
-                settings.REDIS_URL,
+                redis_url,
                 encoding="utf-8",
-                decode_responses=True
+                decode_responses=True,
+                socket_connect_timeout=5,  # 5 second timeout
+                socket_timeout=5,
+                retry_on_timeout=True
             )
+            
+            # Test connection with PING
             await self.redis.ping()
-            logger.info("Connected to Redis")
+            
+            # Get connection info for logging
+            info = await self.redis.info()
+            redis_version = info.get('redis_version', 'unknown')
+            
+            # Parse URL for connection details
+            parsed = urlparse(settings.REDIS_URL)
+            host = parsed.hostname or 'localhost'
+            port = parsed.port or 6379
+            db = parsed.path.lstrip('/') or '0'
+            auth_status = "on" if (parsed.password or settings.REDIS_PASSWORD) else "off"
+            
+            logger.info(f"✅ Redis connected: host={host}, port={port}, db={db}, auth={auth_status}, version={redis_version}")
+            logger.info("📋 Ensure only one Redis runs. If Docker is used, do not start host redis.")
+            
         except Exception as e:
-            logger.error(f"Failed to connect to Redis: {e}")
-            raise
+            error_msg = f"❌ Failed to connect to Redis: {e}"
+            logger.error(error_msg)
+            
+            # Parse URL for error logging
+            parsed = urlparse(settings.REDIS_URL)
+            host = parsed.hostname or 'localhost'
+            port = parsed.port or 6379
+            logger.error(f"Redis connection details: host={host}, port={port}")
+            
+            if settings.REDIS_REQUIRED:
+                logger.error("🚨 REDIS_REQUIRED=true - stopping startup")
+                logger.error("💡 Hint: Check if Redis is running and password is correct")
+                logger.error("💡 For Docker: export REDIS_PASSWORD=dev_redis_password && docker compose up -d redis")
+                raise RuntimeError(f"Redis connection required but failed: {e}")
+            else:
+                logger.warning("⚠️ Redis not available - transcript streaming will be disabled")
+                self.redis = None
             
     async def disconnect(self):
         """Disconnect from Redis."""
@@ -51,7 +131,8 @@ class RedisBus:
     async def publish(self, channel: str, message: Dict[str, Any]):
         """Publish message to channel."""
         if not self.redis:
-            raise RuntimeError("Redis not connected")
+            logger.warning(f"Redis not connected - skipping publish to {channel}")
+            return
             
         try:
             message_str = json.dumps(message)
@@ -64,7 +145,8 @@ class RedisBus:
     async def subscribe(self, channel: str, handler: Callable[[str, Dict[str, Any]], Awaitable[None]]):
         """Subscribe to channel with handler."""
         if not self.redis:
-            raise RuntimeError("Redis not connected")
+            logger.warning(f"Redis not connected - skipping subscription to {channel}")
+            return
             
         self.subscribers[channel] = handler
         
@@ -119,7 +201,8 @@ class RedisBus:
     async def subscribe_generator(self, channel: str):
         """Subscribe to channel and yield messages as async generator."""
         if not self.redis:
-            raise RuntimeError("Redis not connected")
+            logger.warning(f"Redis not connected - no messages will be yielded for {channel}")
+            return  # Empty generator
             
         pubsub = self.redis.pubsub()
         try:

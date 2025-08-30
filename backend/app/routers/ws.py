@@ -9,12 +9,14 @@ from typing import Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from fastapi.encoders import jsonable_encoder
 from starlette.websockets import WebSocketState
+from pydantic import ValidationError
 
 from app.core.security import decode_jwt_token, SecurityError
 from app.services.ws.connection import ws_manager
 from app.services.ws.messages import (
     IngestHandshakeMessage, IngestControlMessage, 
-    create_transcript_message, create_status_message, create_error_message
+    create_transcript_message, create_status_message, create_error_message,
+    TranscriptFinalMessage, TranscriptPartialMessage
 )
 from app.services.asr.deepgram_live import DeepgramLiveClient
 from app.services.transcript.store import transcript_store
@@ -204,7 +206,10 @@ async def websocket_ingest(websocket: WebSocket, meeting_id: str, source: str = 
                 
             # Normalize source: both "sys" and "system" map to "sys" for message consistency
             mapped_source = "sys" if hs.source in ["sys", "system"] else hs.source
-            
+
+            # 🚨 TASK 4: Enhanced dual-source logging
+            logger.info(f"[DUAL-SOURCE] Processing transcript - Meeting: {meeting_id}, Source: {mapped_source}, Text: {res['text'][:50]}...")
+
             msg = create_transcript_message(
                 meeting_id=meeting_id, 
                 segment_no=meeting_segments[meeting_id] if is_final else meeting_segments.get(meeting_id, 0),
@@ -215,17 +220,69 @@ async def websocket_ingest(websocket: WebSocket, meeting_id: str, source: str = 
             
             # Store in database if final
             if is_final:
+                # Generate deepgram_stream_id from meeting_id and source for idempotent key
+                deepgram_stream_id = f"{meeting_id}_{mapped_source}"
+                
                 await transcript_store.store_final_transcript(
-                    meeting_id=meeting_id, segment_no=meeting_segments[meeting_id], text=res["text"],
-                    start_ms=res["start_ms"], end_ms=res["end_ms"], speaker=res.get("speaker"),
-                    confidence=res.get("confidence"), raw_json=res.get("raw_result")
+                    meeting_id=meeting_id, 
+                    segment_no=meeting_segments[meeting_id], 
+                    transcript_text=res["text"],
+                    start_ms=res["start_ms"], 
+                    end_ms=res["end_ms"], 
+                    deepgram_stream_id=deepgram_stream_id,
+                    speaker=res.get("speaker"),
+                    confidence=res.get("confidence"), 
+                    raw_json=res.get("raw_result")
                 )
             
-            # Publish to Redis with JSON serialization fix for datetime objects
-            await redis_bus.publish(
-                redis_bus.get_meeting_transcript_topic(meeting_id), 
-                jsonable_encoder(msg.model_dump())
-            )
+            # Publish to Redis with schema validation
+            topic = redis_bus.get_meeting_transcript_topic(meeting_id)
+            try:
+                # Validate message before publishing
+                if is_final:
+                    validated_msg = TranscriptFinalMessage.model_validate(msg.model_dump())
+                else:
+                    validated_msg = TranscriptPartialMessage.model_validate(msg.model_dump())
+                
+                # Publish validated message
+                await redis_bus.publish(topic, jsonable_encoder(validated_msg.model_dump()))
+                logger.debug(f"✅ Published validated {'final' if is_final else 'partial'} transcript to Redis: {meeting_id}")
+                
+            except ValidationError as e:
+                # Log validation error
+                logger.error(f"❌ Schema validation failed for transcript message: {e}")
+                logger.error(f"📄 Invalid message data: {msg.model_dump()}")
+                
+                # Publish to error channel
+                error_data = {
+                    "error_type": "schema_validation_failed",
+                    "error_message": str(e),
+                    "meeting_id": meeting_id,
+                    "source": mapped_source,
+                    "segment_no": meeting_segments[meeting_id] if is_final else meeting_segments.get(meeting_id, 0),
+                    "is_final": is_final,
+                    "timestamp": jsonable_encoder(msg.ts) if hasattr(msg, 'ts') else None,
+                    "raw_data": msg.model_dump()
+                }
+                
+                await redis_bus.publish(f"{topic}:errors", error_data)
+                logger.info(f"📤 Published validation error to error channel: {topic}:errors")
+                
+            except Exception as e:
+                # Handle other publish errors
+                logger.error(f"❌ Failed to publish transcript message: {e}")
+                error_data = {
+                    "error_type": "publish_failed",
+                    "error_message": str(e),
+                    "meeting_id": meeting_id,
+                    "source": mapped_source,
+                    "timestamp": jsonable_encoder(msg.ts) if hasattr(msg, 'ts') else None
+                }
+                
+                try:
+                    await redis_bus.publish(f"{topic}:errors", error_data)
+                except Exception as publish_error:
+                    logger.error(f"❌ Failed to publish to error channel: {publish_error}")
 
         async def on_err(err: str):
             logger.error(f"Deepgram error: {err}")
@@ -361,6 +418,11 @@ async def websocket_transcript(websocket: WebSocket, meeting_id: str):
         # Start Redis subscription in background task
         async def redis_listener():
             try:
+                # Check if Redis is available
+                if not redis_bus.redis:
+                    logger.warning(f"Redis not connected - transcript streaming disabled for {meeting_id}")
+                    return
+                    
                 async for message in redis_bus.subscribe_generator(channel):
                     if websocket.client_state == WebSocketState.CONNECTED:
                         # Forward transcript message to frontend
@@ -370,6 +432,16 @@ async def websocket_transcript(websocket: WebSocket, meeting_id: str):
                         break
             except Exception as e:
                 logger.error(f"Redis listener error for {meeting_id}: {e}")
+                # Send error message to frontend
+                if websocket.client_state == WebSocketState.CONNECTED:
+                    error_msg = json.dumps({
+                        "type": "error",
+                        "message": "Transcript streaming unavailable - Redis connection failed"
+                    })
+                    try:
+                        await websocket.send_text(error_msg)
+                    except:
+                        pass
         
         # Start listener task
         listener_task = asyncio.create_task(redis_listener())

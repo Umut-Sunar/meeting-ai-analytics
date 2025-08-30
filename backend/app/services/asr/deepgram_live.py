@@ -25,7 +25,7 @@ class DeepgramLiveClient:
         self,
         meeting_id: str,
         language: str = "tr",
-        sample_rate: int = 48000,
+        sample_rate: int = 16000,  # 🚨 FIXED: Default to 16kHz for consistent quality
         channels: int = 1,
         model: str = "nova-2",
         on_transcript: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None,
@@ -75,8 +75,12 @@ class DeepgramLiveClient:
             "sample_rate": str(self.sample_rate),
             "channels": str(self.channels),
             "interim_results": "true",
-            "utterance_end_ms": "1000",
-            "vad_events": "true"
+            "utterance_end_ms": "1000",  # 🚨 OPTIMIZED: Faster sentence detection for 16kHz
+            "vad_events": "true",
+            "smart_format": "true",      # 🚨 TASK 3: Better formatting
+            "profanity_filter": "false", # 🚨 TASK 3: Keep original content
+            "numerals": "true",          # 🚨 TASK 3: Convert numbers to numerals
+            "endpointing": "200"         # 🚨 OPTIMIZED: Faster endpoint detection for 16kHz
         }
         
         url = f"{settings.DEEPGRAM_ENDPOINT}?{urlencode(params)}"
@@ -199,10 +203,10 @@ class DeepgramLiveClient:
         try:
             while self.is_connected and self.websocket:
                 try:
-                    # Wait for message with timeout
+                    # Wait for message with timeout (increased for longer sessions)
                     message = await asyncio.wait_for(
                         self.websocket.recv(),
-                        timeout=30.0
+                        timeout=120.0  # Increased from 30s to 120s for longer sessions
                     )
                     
                     if isinstance(message, str):

@@ -39,16 +39,16 @@ struct TranscriptItem: Identifiable, Codable {
 
 struct TranscriptMessage: Codable {
     let type: String
-    let meeting_id: String
-    let source: String
-    let segment_no: Int
-    let start_ms: Int
+    let meeting_id: String?
+    let source: String?
+    let segment_no: Int?
+    let start_ms: Int?
     let end_ms: Int?
     let speaker: String?
-    let text: String
+    let text: String?
     let confidence: Double?
     let meta: [String: String]?
-    let ts: String
+    let ts: String?
     
     // Check if this is a final transcript
     var is_final: Bool {
@@ -171,28 +171,38 @@ class TranscriptWebSocketManager: ObservableObject {
     private func handleTextMessage(_ text: String) {
         print("📥 Received transcript message: \(text)")
         
-        // Handle ping messages
-        if text.contains("\"type\":\"ping\"") {
-            return
-        }
-        
         // Parse transcript message
         guard let data = text.data(using: .utf8) else { return }
         
         do {
             let message = try JSONDecoder().decode(TranscriptMessage.self, from: data)
             
+            // Handle ping messages
+            if message.type == "ping" {
+                print("💓 Received ping message")
+                return
+            }
+            
+            // Skip messages without required transcript fields
+            guard let meetingId = message.meeting_id,
+                  let source = message.source,
+                  let text = message.text,
+                  let ts = message.ts else {
+                print("⚠️ Skipping message with missing required fields")
+                return
+            }
+            
             // Process both final and partial transcripts
             // Final transcripts are permanent, partial ones are temporary
             let isPartial = !message.is_final
             
-            let source = TranscriptItem.TranscriptSource(rawValue: message.source) ?? .mic
-            let timestamp = ISO8601DateFormatter().date(from: message.ts) ?? Date()
+            let sourceType = TranscriptItem.TranscriptSource(rawValue: source) ?? .mic
+            let timestamp = ISO8601DateFormatter().date(from: ts) ?? Date()
             
             let item = TranscriptItem(
-                speaker: message.speaker ?? source.displayName,
-                text: message.text,
-                source: source,
+                speaker: message.speaker ?? sourceType.displayName,
+                text: text,
+                source: sourceType,
                 timestamp: timestamp,
                 confidence: message.confidence
             )
@@ -201,7 +211,7 @@ class TranscriptWebSocketManager: ObservableObject {
                 if isPartial {
                     // For partial transcripts, replace the last item if it's from the same source and segment
                     if let lastIndex = self.transcripts.lastIndex(where: { 
-                        $0.source == source && $0.timestamp.timeIntervalSince(timestamp) < 5.0 
+                        $0.source == sourceType && $0.timestamp.timeIntervalSince(timestamp) < 5.0 
                     }) {
                         self.transcripts[lastIndex] = item
                         print("🔄 Updated partial transcript: \(item.speaker) - \(message.text)")
