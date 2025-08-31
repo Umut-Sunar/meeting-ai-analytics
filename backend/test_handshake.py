@@ -12,9 +12,9 @@ async def test_handshake_protocol():
     """Test the new handshake protocol."""
     
     # Use provided JWT token
-    jwt_token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTAwMSIsInRlbmFudF9pZCI6InRlc3QtdGVuYW50LTAwMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzU2NjgzMzUzLCJpYXQiOjE3NTY1OTY5NTMsImF1ZCI6Im1lZXRpbmdzIiwiaXNzIjoib3VyLWFwcCJ9.jVeHk5a52u_zogEg-nQuRkYNACdln0ytOoO5BIACDgMRBlaQq82bvXEl_Ua3P2wqp0OOe_de9-5oOznlaO6C-_8P7RofhlLCYiOnjWDnOoY0EMBtr8o1MotawacYcNc2Vkyd7t_7kqKGW_oF9gGe6I_RQ-Tq6ummOnJ9WLeuOQhnH6EesE6PVxTdMdw2P4XahcSTB3BzDYeedPrx3U_BUFfzDPiqv4QQlVJNCrlHM0TyfjrQm9EcjLRDgARM2jlz2Ig9b7jiwWdP-SI9q4IsxhliS6ZxGDETypEvzFNSBXRC17Iz8nd-pgpTwHhdlnH9JiH8hIZ4hgT-FrInK0r7VQ"
+2q4    jwt_token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTAwMSIsInRlbmFudF9pZCI6InRlc3QtdGVuYW50LTAwMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzU2NzE2OTEzLCJpYXQiOjE3NTY2MzA1MTMsImF1ZCI6Im1lZXRpbmdzIiwiaXNzIjoib3VyLWFwcCJ9.XzmFKr0IRtjryqCGfuAvP33MLZqoYX36rDH-lBw8tVHwu9pyTqlQbsH_5Zdx0vJSBMLUtQpo9dOYsvb4xQIEqPe5EpVBpb5GWyvi3Xfa6G15Pr7MYUx1oTtv53Mj4BTpmOImGcy0qZ81hoXb056MRJZ-e-LoIYssxYxfUE5m59a7ac-RrfuUO-8bgGtSYX_t_uJ0ykqlSC8Jf6tOywGcegjLz_El-7pKjtcsO-GQButj49b2PlRN933FhZAr412adpuCHvCd2xcq9RXze_LAzMrF-0qQ12ykAbGv-9A_0rmTOoyEKI75xENeLJKpHJ9Za6ykXAN_xhlnH31S6uRLew"
     
-    uri = f"ws://localhost:8000/ws/ingest/meetings/m1?source=mic&token={jwt_token}"
+    uri = f"ws://localhost:8000/api/v1/ws/ingest/meetings/m1?source=mic&token= {jwt_token}"
     
     print(f"🔌 Connecting to {uri}")
     
@@ -56,9 +56,9 @@ async def test_invalid_handshake():
     """Test invalid handshake scenarios."""
     
     # Use provided JWT token
-    jwt_token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTAwMSIsInRlbmFudF9pZCI6InRlc3QtdGVuYW50LTAwMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzU2NjgzMzUzLCJpYXQiOjE3NTY1OTY5NTMsImF1ZCI6Im1lZXRpbmdzIiwiaXNzIjoib3VyLWFwcCJ9.jVeHk5a52u_zogEg-nQuRkYNACdln0ytOoO5BIACDgMRBlaQq82bvXEl_Ua3P2wqp0OOe_de9-5oOznlaO6C-_8P7RofhlLCYiOnjWDnOoY0EMBtr8o1MotawacYcNc2Vkyd7t_7kqKGW_oF9gGe6I_RQ-Tq6ummOnJ9WLeuOQhnH6EesE6PVxTdMdw2P4XahcSTB3BzDYeedPrx3U_BUFfzDPiqv4QQlVJNCrlHM0TyfjrQm9EcjLRDgARM2jlz2Ig9b7jiwWdP-SI9q4IsxhliS6ZxGDETypEvzFNSBXRC17Iz8nd-pgpTwHhdlnH9JiH8hIZ4hgT-FrInK0r7VQ"
+    jwt_token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTAwMSIsInRlbmFudF9pZCI6InRlc3QtdGVuYW50LTAwMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzU2NzE2OTEzLCJpYXQiOjE3NTY2MzA1MTMsImF1ZCI6Im1lZXRpbmdzIiwiaXNzIjoib3VyLWFwcCJ9.XzmFKr0IRtjryqCGfuAvP33MLZqoYX36rDH-lBw8tVHwu9pyTqlQbsH_5Zdx0vJSBMLUtQpo9dOYsvb4xQIEqPe5EpVBpb5GWyvi3Xfa6G15Pr7MYUx1oTtv53Mj4BTpmOImGcy0qZ81hoXb056MRJZ-e-LoIYssxYxfUE5m59a7ac-RrfuUO-8bgGtSYX_t_uJ0ykqlSC8Jf6tOywGcegjLz_El-7pKjtcsO-GQButj49b2PlRN933FhZAr412adpuCHvCd2xcq9RXze_LAzMrF-0qQ12ykAbGv-9A_0rmTOoyEKI75xENeLJKpHJ9Za6ykXAN_xhlnH31S6uRLew"
     
-    uri = f"ws://localhost:8000/ws/ingest/meetings/m1?source=sys&token={jwt_token}"
+    uri = f"ws://localhost:8000/api/v1/ws/ingest/meetings/m1?source=sys&token={jwt_token}"
     
     print(f"\n🔌 Testing invalid handshake on {uri}")
     
@@ -91,9 +91,9 @@ async def test_handshake_timeout():
     """Test handshake timeout."""
     
     # Use provided JWT token
-    jwt_token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTAwMSIsInRlbmFudF9pZCI6InRlc3QtdGVuYW50LTAwMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzU2NjgzMzUzLCJpYXQiOjE3NTY1OTY5NTMsImF1ZCI6Im1lZXRpbmdzIiwiaXNzIjoib3VyLWFwcCJ9.jVeHk5a52u_zogEg-nQuRkYNACdln0ytOoO5BIACDgMRBlaQq82bvXEl_Ua3P2wqp0OOe_de9-5oOznlaO6C-_8P7RofhlLCYiOnjWDnOoY0EMBtr8o1MotawacYcNc2Vkyd7t_7kqKGW_oF9gGe6I_RQ-Tq6ummOnJ9WLeuOQhnH6EesE6PVxTdMdw2P4XahcSTB3BzDYeedPrx3U_BUFfzDPiqv4QQlVJNCrlHM0TyfjrQm9EcjLRDgARM2jlz2Ig9b7jiwWdP-SI9q4IsxhliS6ZxGDETypEvzFNSBXRC17Iz8nd-pgpTwHhdlnH9JiH8hIZ4hgT-FrInK0r7VQ"
+    jwt_token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidGVzdC11c2VyLTAwMSIsInRlbmFudF9pZCI6InRlc3QtdGVuYW50LTAwMSIsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzU2NzE2OTEzLCJpYXQiOjE3NTY2MzA1MTMsImF1ZCI6Im1lZXRpbmdzIiwiaXNzIjoib3VyLWFwcCJ9.XzmFKr0IRtjryqCGfuAvP33MLZqoYX36rDH-lBw8tVHwu9pyTqlQbsH_5Zdx0vJSBMLUtQpo9dOYsvb4xQIEqPe5EpVBpb5GWyvi3Xfa6G15Pr7MYUx1oTtv53Mj4BTpmOImGcy0qZ81hoXb056MRJZ-e-LoIYssxYxfUE5m59a7ac-RrfuUO-8bgGtSYX_t_uJ0ykqlSC8Jf6tOywGcegjLz_El-7pKjtcsO-GQButj49b2PlRN933FhZAr412adpuCHvCd2xcq9RXze_LAzMrF-0qQ12ykAbGv-9A_0rmTOoyEKI75xENeLJKpHJ9Za6ykXAN_xhlnH31S6uRLew"
     
-    uri = f"ws://localhost:8000/ws/ingest/meetings/m2?source=mic&token={jwt_token}"
+    uri = f"ws://localhost:8000/api/v1/ws/ingest/meetings/m2?source=mic&token={jwt_token}"
     
     print(f"\n🔌 Testing handshake timeout on {uri}")
     

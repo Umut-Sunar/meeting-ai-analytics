@@ -255,7 +255,7 @@ struct SettingsView: View {
             DispatchQueue.main.async {
                 self.appState.log("✅ WebSocket connection successful!")
                 self.showConnectionResult(success: true, message: "Connection successful! Backend is ready.")
-                testWS.close(sendFinalize: false)
+                testWS.stop()
             }
         }
         
@@ -274,7 +274,7 @@ struct SettingsView: View {
                     self.showConnectionResult(success: false, message: "Connection failed: \(error)")
                 }
                 
-                testWS.close(sendFinalize: false)
+                testWS.stop()
             }
         }
         
@@ -284,17 +284,13 @@ struct SettingsView: View {
             }
         }
         
-        // Test connection with dummy handshake
-        let testHandshake = BackendIngestWS.Handshake(
-            source: "mic",
-            sample_rate: 48000,
-            channels: 1,
-            language: "en",
-            ai_mode: "standard",
-            device_id: "test-device"
-        )
+        // Test connection with new API
+        guard let testURL = buildTestWebSocketURL(baseURL: tempURL, jwtToken: cleanToken) else {
+            self.appState.log("❌ Failed to build test WebSocket URL")
+            return
+        }
         
-        testWS.open(baseURL: tempURL, meetingId: "test-connection", source: "mic", jwtToken: cleanToken, handshake: testHandshake)
+        testWS.connect(url: testURL, meetingId: "test-connection", source: "mic")
         
         // Timeout after 10 seconds
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
@@ -303,8 +299,40 @@ struct SettingsView: View {
             
             self.appState.log("⏰ Connection test timeout")
             self.showConnectionResult(success: false, message: "Connection test timeout (10s)")
-            testWS.close(sendFinalize: false)
+            testWS.stop()
         }
+    }
+    
+    private func buildTestWebSocketURL(baseURL: String, jwtToken: String) -> URL? {
+        // Parse base URL
+        guard let baseURLObj = URL(string: baseURL) else {
+            return nil
+        }
+        
+        // Build WebSocket URL components
+        var components = URLComponents()
+        
+        // Determine scheme (ws for local, wss for prod)
+        let isLocal = baseURL.contains("localhost") || baseURL.contains("127.0.0.1")
+        components.scheme = isLocal ? "ws" : "wss"
+        
+        // Set host (force IPv4 for localhost)
+        let host = baseURLObj.host ?? "127.0.0.1"
+        components.host = host == "localhost" ? "127.0.0.1" : host
+        
+        // Set port
+        components.port = baseURLObj.port ?? (isLocal ? 8000 : nil)
+        
+        // Set path
+        components.path = "/api/v1/ws/ingest/meetings/test-connection"
+        
+        // Add query parameters
+        components.queryItems = [
+            URLQueryItem(name: "source", value: "mic"),
+            URLQueryItem(name: "token", value: jwtToken)
+        ]
+        
+        return components.url
     }
     
     private func showConnectionResult(success: Bool, message: String) {

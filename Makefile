@@ -40,22 +40,10 @@ clean:
 	rm -f dump.rdb
 	@echo "✅ Cleanup complete!"
 
-# Redis management
-redis-start:
-	@echo "🚀 Starting Docker Redis..."
-	export REDIS_PASSWORD=dev_redis_password && docker compose -f docker-compose.dev.yml up -d redis
-
-redis-stop:
-	@echo "🛑 Stopping Redis..."
-	docker compose -f docker-compose.dev.yml down redis
-
+# Legacy Redis targets (kept for compatibility)
 redis-logs:
 	@echo "📋 Redis logs..."
 	docker logs meeting-ai-redis --tail 20
-
-redis-host-start:
-	@echo "🧩 Starting host Redis..."
-	export USE_DOCKER_REDIS=0 && ./scripts/start_redis.sh
 
 redis-conflict-check:
 	@echo "🔍 Checking for Redis conflicts..."
@@ -67,15 +55,6 @@ redis-conflict-check:
 	@echo ""
 	@echo "Docker Redis status:"
 	@docker ps --filter name=meeting-ai-redis --format "table {{.Names}}\t{{.Status}}" || echo "No Docker Redis container"
-
-redis-cleanup:
-	@echo "🧹 Cleaning up all Redis instances..."
-	@echo "Stopping Docker Redis..."
-	@docker compose -f docker-compose.dev.yml down redis 2>/dev/null || true
-	@echo "Stopping host Redis..."
-	@brew services stop redis 2>/dev/null || true
-	@pkill -f redis-server 2>/dev/null || true
-	@echo "✅ All Redis instances stopped"
 
 # Backend management
 backend-start:
@@ -96,6 +75,39 @@ system-stop:
 	docker compose -f docker-compose.dev.yml down
 	pkill -f "uvicorn app.main:app" || true
 
+# Redis management
+redis-start:
+	@echo "🚀 Starting Redis..."
+	./scripts/redis_manager.sh start
+
+redis-stop:
+	@echo "🛑 Stopping Redis..."
+	./scripts/redis_manager.sh stop
+
+redis-restart:
+	@echo "♻️ Restarting Redis..."
+	./scripts/redis_manager.sh restart
+
+redis-docker:
+	@echo "🐳 Starting Docker Redis..."
+	./scripts/redis_manager.sh docker
+
+redis-host:
+	@echo "🏠 Starting Host Redis..."
+	./scripts/redis_manager.sh host
+
+redis-status:
+	@echo "📊 Redis status..."
+	./scripts/redis_manager.sh status
+
+redis-test:
+	@echo "🧪 Testing Redis integration..."
+	./scripts/redis_manager.sh test
+
+redis-cleanup-new:
+	@echo "🧹 Cleaning up all Redis instances..."
+	./scripts/redis_manager.sh cleanup
+
 # Development utilities
 logs:
 	@echo "📋 System logs..."
@@ -108,3 +120,6 @@ status:
 	@echo ""
 	@echo "🔌 Port usage:"
 	lsof -i :8000 -i :6379 -i :5432 || echo "No services running on main ports"
+	@echo ""
+	@echo "📊 Redis detailed status:"
+	./scripts/redis_manager.sh status

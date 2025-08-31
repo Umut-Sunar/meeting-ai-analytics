@@ -15,9 +15,10 @@ from app.core.config import get_settings
 from app.services.ws.connection import ws_manager
 from app.services.pubsub.redis_bus import redis_bus
 from app.services.ws.messages import (
-    TranscriptPartialMessage, 
-    TranscriptFinalMessage,
-    StatusMessage
+    TranscriptMessage, 
+    TranscriptSegment,
+    WebSocketMessage,
+    MessageType
 )
 
 # Configure logging
@@ -108,42 +109,14 @@ async def websocket_subscriber(websocket: WebSocket, meeting_id: str, token: str
 ingest_registry: Dict[Tuple[str, str], Dict[str, Any]] = {}
 
 @router.websocket("/ws/ingest/meetings/{meeting_id}")
-async def websocket_ingest(websocket: WebSocket, meeting_id: str):
+async def websocket_ingest(websocket: WebSocket, meeting_id: str, source: str = Query("mic", regex="^(mic|sys|system)$"), token: str = Query(None)):
     """WebSocket ingest endpoint with rate limiting, handshake protocol and structured logging."""
-    print(f"🔌 WEBSOCKET INGEST CALLED: meeting_id={meeting_id}")
-    logger.info(f"🔌 WebSocket ingest called: meeting_id={meeting_id}")
-    
-    # Get query parameters manually
-    query_params = dict(websocket.query_params)
-    source = query_params.get('source', 'mic')
-    token = query_params.get('token')
-    print(f"🔌 Query params: source={source}, token={token}")
-    logger.info(f"🔌 Query params: source={source}, token={token}")
-    try:
-        # Simple implementation for testing
-        await websocket.accept()
-        
-        # Simulate handshake
-        try:
-            message = await asyncio.wait_for(websocket.receive_json(), timeout=5.0)
-            if message.get('type') == 'handshake':
-                await websocket.send_json({'type': 'handshake-ack', 'ok': True})
-                print(f'✅ Handshake successful for {meeting_id}')
-                
-                # Keep connection alive for a bit
-                await asyncio.sleep(1)
-        except:
-            pass
-            
-        await websocket.close()
-        logger.info(f"🔌 Simple ingest test completed")
-    except Exception as e:
-        logger.error(f"🔌 WebSocket ingest error: {e}")
-        import traceback
-        logger.error(f"🔌 Traceback: {traceback.format_exc()}")
+    # Delegate to the new structured ingest handler
+    from app.websocket.ingest import handle_websocket_ingest
+    await handle_websocket_ingest(websocket, meeting_id, source, token)
 
 
-@router.websocket("/ws/transcript/{meeting_id}")
+@router.websocket("/transcript/{meeting_id}")
 async def websocket_transcript(websocket: WebSocket, meeting_id: str):
     """
     Frontend WebSocket endpoint for receiving real-time transcripts.
@@ -209,35 +182,6 @@ async def websocket_transcript(websocket: WebSocket, meeting_id: str):
         
         logger.info(f"🌐 Frontend WebSocket cleanup completed for meeting: {meeting_id}")
 
-
-@router.websocket("/ws/test")
-async def websocket_test(websocket: WebSocket):
-    """Simple test WebSocket endpoint."""
-    print("🧪 TEST WEBSOCKET CALLED")
-    logger.info("🧪 Test WebSocket called")
-    await websocket.accept()
-    await websocket.send_text("Hello from test WebSocket!")
-    await websocket.close()
-
-@router.websocket("/ws/simple/{meeting_id}")
-async def websocket_simple(websocket: WebSocket, meeting_id: str):
-    """Simple WebSocket endpoint with path parameter."""
-    print(f"🧪 SIMPLE WEBSOCKET CALLED: meeting_id={meeting_id}")
-    await websocket.accept()
-    await websocket.send_text(f"Hello from simple WebSocket! Meeting: {meeting_id}")
-    await websocket.close()
-
-@router.websocket("/ws/debug/meetings/{meeting_id}")
-async def websocket_debug(websocket: WebSocket, meeting_id: str):
-    """Debug WebSocket endpoint identical to ingest."""
-    print(f"🐛 DEBUG WEBSOCKET CALLED: meeting_id={meeting_id}")
-    query_params = dict(websocket.query_params)
-    source = query_params.get('source', 'mic')
-    token = query_params.get('token')
-    print(f"🐛 Query params: source={source}, token={token}")
-    await websocket.accept()
-    await websocket.send_text(f"Debug: meeting={meeting_id}, source={source}, token={token}")
-    await websocket.close()
 
 @router.get("/ws/meetings/{meeting_id}/stats")
 async def get_meeting_stats(meeting_id: str):

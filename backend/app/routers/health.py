@@ -39,14 +39,14 @@ class DetailedHealthResponse(BaseModel):
     response_model=HealthResponse,
     status_code=status.HTTP_200_OK,
     summary="Health Check",
-    description="Health check endpoint for k8s/ecs probes. Returns redis, storage status and version."
+    description="Simple health check endpoint for k8s/ecs probes. Returns redis, storage status and version."
 )
 async def health_check() -> HealthResponse:
     """
-    Health check endpoint optimized for k8s/ecs probes.
+    Simple health check endpoint optimized for k8s/ecs probes.
     
     Returns:
-        HealthResponse: Redis status, storage status, and version
+        HealthResponse: Redis status (ok|down), storage status (ok|down), and version
     """
     # Check Redis connection
     redis_status = "down"
@@ -57,18 +57,18 @@ async def health_check() -> HealthResponse:
         except Exception:
             redis_status = "down"
     
-    # Check Storage connection
+    # Check Storage connection  
     storage_status = "down"
     if STORAGE_AVAILABLE and storage_service:
         try:
-            # Lightweight check - list buckets or check if a known bucket exists
+            # Lightweight check - list buckets
             buckets = await storage_service.list_buckets()
-            if buckets:
-                storage_status = "ok"
+            storage_status = "ok" if buckets is not None else "down"
         except Exception:
             storage_status = "down"
     else:
-        storage_status = "unavailable"
+        # If storage is not available/configured, consider it as "down"
+        storage_status = "down"
     
     return HealthResponse(
         redis=redis_status,

@@ -147,39 +147,41 @@ final class CaptureController: ObservableObject {
         
         // MIC WebSocket (isteğe bağlı)
         if appState.captureMic {
-            let hs = BackendIngestWS.Handshake(
-                source: "mic",
-                sample_rate: 16000,  // 🚨 FIXED: Standardized to 16kHz
-                channels: 1,
-                language: appState.language,
-                ai_mode: appState.aiMode,
-                device_id: appState.deviceId + "-mic"
-            )
-            wsMic.open(
+            // Build WebSocket URL with JWT token
+            guard let wsURL = buildWebSocketURL(
                 baseURL: appState.backendURLString,
                 meetingId: appState.meetingId,
                 source: "mic",
-                jwtToken: appState.jwtToken,
-                handshake: hs
+                jwtToken: appState.jwtToken
+            ) else {
+                appState.log("❌ Failed to build MIC WebSocket URL")
+                return
+            }
+            
+            wsMic.connect(
+                url: wsURL,
+                meetingId: appState.meetingId,
+                source: "mic"
             )
         }
         
         // SYSTEM WebSocket (isteğe bağlı) - Permission check zaten yukarıda yapıldı
         if appState.captureSystem {
-            let hs = BackendIngestWS.Handshake(
-                source: "system",
-                sample_rate: 16000,  // 🚨 FIXED: Standardized to 16kHz
-                channels: 1,
-                language: appState.language,
-                ai_mode: appState.aiMode,
-                device_id: appState.deviceId + "-sys"
-            )
-            wsSys.open(
+            // Build WebSocket URL with JWT token
+            guard let wsURL = buildWebSocketURL(
                 baseURL: appState.backendURLString,
                 meetingId: appState.meetingId,
                 source: "sys",
-                jwtToken: appState.jwtToken,
-                handshake: hs
+                jwtToken: appState.jwtToken
+            ) else {
+                appState.log("❌ Failed to build SYSTEM WebSocket URL")
+                return
+            }
+            
+            wsSys.connect(
+                url: wsURL,
+                meetingId: appState.meetingId,
+                source: "sys"
             )
         }
         
@@ -236,9 +238,9 @@ final class CaptureController: ObservableObject {
             audioEngine?.stop()
             audioEngine = nil
             
-            // Close WebSockets with finalize
-            wsMic.close(sendFinalize: true)
-            wsSys.close(sendFinalize: true)
+            // Close WebSockets
+            wsMic.stop()
+            wsSys.stop()
             
             appState.isCapturing = false
             appState.log("✅ Capture stopped")
@@ -246,6 +248,38 @@ final class CaptureController: ObservableObject {
     }
     
     // MARK: - Private Helpers
+    
+    private func buildWebSocketURL(baseURL: String, meetingId: String, source: String, jwtToken: String) -> URL? {
+        // Parse base URL
+        guard let baseURLObj = URL(string: baseURL) else {
+            return nil
+        }
+        
+        // Build WebSocket URL components
+        var components = URLComponents()
+        
+        // Determine scheme (ws for local, wss for prod)
+        let isLocal = baseURL.contains("localhost") || baseURL.contains("127.0.0.1")
+        components.scheme = isLocal ? "ws" : "wss"
+        
+        // Set host (force IPv4 for localhost)
+        let host = baseURLObj.host ?? "127.0.0.1"
+        components.host = host == "localhost" ? "127.0.0.1" : host
+        
+        // Set port
+        components.port = baseURLObj.port ?? (isLocal ? 8000 : nil)
+        
+        // Set path
+        components.path = "/api/v1/ws/ingest/meetings/\(meetingId)"
+        
+        // Add query parameters
+        components.queryItems = [
+            URLQueryItem(name: "source", value: source),
+            URLQueryItem(name: "token", value: jwtToken)
+        ]
+        
+        return components.url
+    }
     
     private func setupWebSocketCallbacks(for ws: BackendIngestWS, appState: AppState, source: String) {
         ws.onLog = { [weak appState] message in
